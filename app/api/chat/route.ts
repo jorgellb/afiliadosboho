@@ -3,7 +3,7 @@ import { z } from "zod";
 import { runAssistant } from "@/lib/assistant";
 import { rateLimit } from "@/lib/cache";
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 const bodySchema = z.object({
   messages: z
@@ -46,6 +46,12 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("Error en el asistente:", error);
+    if (error instanceof Error && error.message.startsWith("API de NVIDIA: saturada")) {
+      return NextResponse.json(
+        { error: "El asistente está saturado ahora mismo, inténtalo en unos minutos." },
+        { status: 503 }
+      );
+    }
     const message =
       error instanceof Error &&
       error.message.startsWith("Falta la variable de entorno")

@@ -137,23 +137,36 @@ async function callModel(messages: ApiMessage[]): Promise<ApiMessage> {
   if (!apiKey) {
     throw new Error("Falta la variable de entorno NVIDIA_API_KEY");
   }
-  const response = await fetch(`${BASE_URL}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages,
-      tools: [SEARCH_TOOL],
-      temperature: 0.2,
-      top_p: 0.7,
-      max_tokens: 1024,
-      stream: false,
-    }),
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages,
+        tools: [SEARCH_TOOL],
+        temperature: 0.2,
+        top_p: 0.7,
+        max_tokens: 512,
+        stream: false,
+      }),
+      cache: "no-store",
+      // El endpoint gratuito de NVIDIA encola peticiones cuando está saturado;
+      // cortamos antes de que Vercel mate la función con un 504 sin mensaje.
+      signal: AbortSignal.timeout(45_000),
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "TimeoutError") {
+      throw new Error(
+        "API de NVIDIA: saturada en este momento, inténtalo de nuevo en unos minutos"
+      );
+    }
+    throw error;
+  }
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
     throw new Error(
