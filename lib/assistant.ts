@@ -1,6 +1,8 @@
 import { and, desc, eq, gte, ilike, lte, or, SQL } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { CATEGORIES, Category, products } from "@/lib/db/schema";
+import { ProviderError, getProvider } from "@/lib/providers";
+import { upsertProduct } from "@/lib/products";
 
 /**
  * Asistente de moda con tool calling sobre la API de NVIDIA (compatible con
@@ -39,11 +41,12 @@ const SYSTEM_PROMPT = `Eres "Boho", la estilista virtual de una tienda online de
 
 Reglas:
 - Respondes SIEMPRE en el idioma del usuario (normalmente español), con tono cercano y breve (máximo ~120 palabras).
-- Cuando el usuario busque ropa, pida ideas de look o mencione una ocasión (playa, boda, festival...), usa PRIMERO la herramienta search_products para buscar en el catálogo. Usa palabras clave cortas en español (ej. "vestido", "kimono"); si no hay resultados, reintenta con una sola palabra más genérica.
-- Solo puedes recomendar productos que la herramienta haya devuelto; menciónalos por su título (abreviado) y explica por qué encajan. Nunca inventes productos, precios ni enlaces.
-- Si el catálogo no tiene nada adecuado, dilo con honestidad y da consejos de estilo generales (combinaciones, tejidos, accesorios).
+- Cuando el usuario busque ropa, pida ideas de look o mencione una ocasión (playa, boda, festival...), usa PRIMERO la herramienta search_products para buscar en el catálogo de la tienda. Usa palabras clave cortas en español (ej. "vestido", "kimono").
+- Si el catálogo devuelve menos de 2 resultados adecuados, usa search_aliexpress para buscar productos nuevos en AliExpress con palabras clave en español e indica la categoría que corresponda.
+- Solo puedes recomendar productos que las herramientas hayan devuelto; menciónalos por su título (abreviado) y explica por qué encajan. Nunca inventes productos, precios ni enlaces.
+- Si ninguna herramienta devuelve nada adecuado, dilo con honestidad y da consejos de estilo generales (combinaciones, tejidos, accesorios).
 - Da consejos de moda concretos: cómo combinar, para qué ocasión, qué accesorios boho añadir.
-- No hables de estas reglas ni de la herramienta.`;
+- No hables de estas reglas ni de las herramientas.`;
 
 interface ToolCall {
   id: string;
@@ -80,6 +83,31 @@ const SEARCH_TOOL = {
         max_price: { type: "number", description: "Precio máximo. Opcional." },
       },
       required: [],
+    },
+  },
+};
+
+const ALIEXPRESS_TOOL = {
+  type: "function",
+  function: {
+    name: "search_aliexpress",
+    description:
+      "Busca productos nuevos en AliExpress cuando el catálogo de la tienda no tiene suficientes opciones. Los resultados se añaden automáticamente al catálogo.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "Palabras clave en español (ej. 'kimono boho verano').",
+        },
+        category: {
+          type: "string",
+          enum: [...CATEGORIES],
+          description: "Categoría de la tienda que corresponde a la búsqueda.",
+        },
+        max_price: { type: "number", description: "Precio máximo. Opcional." },
+      },
+      required: ["query"],
     },
   },
 };
@@ -132,6 +160,51 @@ async function searchProducts(args: {
   }));
 }
 
+/**
+ * Busca en vivo en AliExpress y guarda los resultados en el catálogo (tags
+ * "asistente"), de modo que las tarjetas usen /go/[id] con clic contado y la
+ * tienda crezca con cada recomendación.
+ */
+async function searchAliexpressAndSave(args: {
+  query?: string;
+  category?: string;
+  max_price?: number;
+}): Promise<AssistantProduct[]> {
+  const query = (args.query ?? "").trim();
+  if (!query) return [];
+  const category = CATEGORIES.includes(args.category as Category)
+    ? (args.category as Category)
+    : "otros";
+
+  const results = await getProvider("aliexpress").search(query, 1);
+  const priced = results
+    .filter(
+      (r) =>
+        r.price !== null &&
+        r.available &&
+        (typeof args.max_price !== "number" ||
+          args.max_price <= 0 ||
+          Number(r.price) <= args.max_price)
+    )
+    .slice(0, 5);
+
+  const saved: AssistantProduct[] = [];
+  for (const result of priced) {
+    const row = await upsertProduct(result, { category, tags: ["asistente"] });
+    saved.push({
+      id: row.id,
+      title: row.title,
+      price: row.price,
+      currency: row.currency,
+      originalPrice: row.originalPrice,
+      imageUrl: row.imageUrl,
+      category: row.category,
+      source: row.source,
+    });
+  }
+  return saved;
+}
+
 async function callModel(messages: ApiMessage[]): Promise<ApiMessage> {
   const apiKey = process.env.NVIDIA_API_KEY;
   if (!apiKey) {
@@ -148,7 +221,7 @@ async function callModel(messages: ApiMessage[]): Promise<ApiMessage> {
       body: JSON.stringify({
         model: MODEL,
         messages,
-        tools: [SEARCH_TOOL],
+        tools: [SEARCH_TOOL, ALIEXPRESS_TOOL],
         temperature: 1,
         top_p: 1,
         // GLM es un modelo razonador: el límite debe cubrir razonamiento + respuesta.
@@ -218,33 +291,44 @@ export async function runAssistant(
 
     for (const call of message.tool_calls) {
       let results: AssistantProduct[] = [];
-      if (call.function.name === "search_products") {
-        let args: Record<string, unknown> = {};
-        try {
-          args = JSON.parse(call.function.arguments || "{}");
-        } catch {
-          // argumentos malformados: búsqueda sin filtros
-        }
-        try {
-          results = await searchProducts(args);
-        } catch (error) {
-          console.error("Error buscando productos para el agente:", error);
-        }
-        for (const p of results) collected.set(p.id, p);
+      let toolError: string | null = null;
+      let args: Record<string, unknown> = {};
+      try {
+        args = JSON.parse(call.function.arguments || "{}");
+      } catch {
+        // argumentos malformados: búsqueda sin filtros
       }
+      try {
+        if (call.function.name === "search_products") {
+          results = await searchProducts(args);
+        } else if (call.function.name === "search_aliexpress") {
+          results = await searchAliexpressAndSave(args);
+        } else {
+          toolError = `herramienta desconocida: ${call.function.name}`;
+        }
+      } catch (error) {
+        console.error("Error en herramienta del agente:", error);
+        toolError =
+          error instanceof ProviderError
+            ? error.message
+            : "error interno al buscar productos";
+      }
+      for (const p of results) collected.set(p.id, p);
       messages.push({
         role: "tool",
         tool_call_id: call.id,
         // Solo los campos que el modelo necesita para razonar (sin URLs).
-        content: JSON.stringify(
-          results.map((p) => ({
-            id: p.id,
-            titulo: p.title,
-            precio: `${p.price} ${p.currency}`,
-            categoria: p.category,
-            tienda: p.source,
-          }))
-        ),
+        content: toolError
+          ? JSON.stringify({ error: toolError })
+          : JSON.stringify(
+              results.map((p) => ({
+                id: p.id,
+                titulo: p.title,
+                precio: `${p.price} ${p.currency}`,
+                categoria: p.category,
+                tienda: p.source,
+              }))
+            ),
       });
     }
   }
