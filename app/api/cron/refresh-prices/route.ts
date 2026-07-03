@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { refreshStalePrices } from "@/lib/refresh";
+import { generateMissingSeo, SeoSummary } from "@/lib/seo";
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 /**
  * Cron de Vercel (ver vercel.json). Vercel envía automáticamente
  * `Authorization: Bearer ${CRON_SECRET}` cuando la variable existe.
+ * Además de refrescar precios, redacta fichas SEO pendientes.
  */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -14,5 +16,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
   const summary = await refreshStalePrices();
-  return NextResponse.json(summary);
+  let seo: SeoSummary = { generated: 0, errors: [] };
+  try {
+    seo = await generateMissingSeo(5);
+  } catch (error) {
+    seo.errors.push(error instanceof Error ? error.message : "error SEO");
+  }
+  return NextResponse.json({ ...summary, seo });
 }

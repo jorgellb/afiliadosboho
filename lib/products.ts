@@ -122,6 +122,61 @@ export async function getProductById(id: string): Promise<Product | undefined> {
   return rows[0];
 }
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Busca por slug SEO y, si el parámetro es un UUID, también por id. */
+export async function getProductBySlugOrId(
+  slugOrId: string
+): Promise<Product | undefined> {
+  const bySlug = await db
+    .select()
+    .from(products)
+    .where(eq(products.slug, slugOrId))
+    .limit(1);
+  if (bySlug[0]) return bySlug[0];
+  if (UUID_RE.test(slugOrId)) return getProductById(slugOrId);
+  return undefined;
+}
+
+/** Piezas relacionadas de la misma categoría para la ficha. */
+export async function getRelatedProducts(
+  category: Category,
+  excludeId: string,
+  limit: number = 4
+): Promise<Product[]> {
+  return db
+    .select()
+    .from(products)
+    .where(
+      and(
+        eq(products.category, category),
+        eq(products.isActive, true),
+        eq(products.available, true),
+        sql`${products.id} <> ${excludeId}`
+      )
+    )
+    .orderBy(desc(products.clicks), desc(products.createdAt))
+    .limit(limit);
+}
+
+/** Productos visibles con slug, para el sitemap. */
+export async function getProductsForSitemap(): Promise<
+  { slug: string; updatedAt: Date }[]
+> {
+  const rows = await db
+    .select({ slug: products.slug, updatedAt: products.updatedAt })
+    .from(products)
+    .where(
+      and(
+        eq(products.isActive, true),
+        eq(products.available, true),
+        sql`${products.slug} IS NOT NULL`
+      )
+    );
+  return rows.filter((r): r is { slug: string; updatedAt: Date } => r.slug !== null);
+}
+
 /** Inserta o actualiza (por source + source_product_id) un producto normalizado. */
 export async function upsertProduct(
   normalized: NormalizedProduct,

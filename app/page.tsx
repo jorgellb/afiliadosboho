@@ -159,6 +159,43 @@ export default async function StorePage({
           <button type="submit">Filtrar</button>
         </form>
 
+        {(filters.q ||
+          filters.source ||
+          filters.category ||
+          filters.min !== undefined ||
+          filters.max !== undefined) && (
+          <div className="active-filters">
+            {filters.q && (
+              <Link href={pageHref({ ...filters, q: undefined }, 1)}>
+                “{filters.q}” ✕
+              </Link>
+            )}
+            {filters.source && (
+              <Link href={pageHref({ ...filters, source: undefined }, 1)}>
+                {SOURCE_LABELS[filters.source]} ✕
+              </Link>
+            )}
+            {filters.category && (
+              <Link href={pageHref({ ...filters, category: undefined }, 1)}>
+                {filters.category} ✕
+              </Link>
+            )}
+            {filters.min !== undefined && (
+              <Link href={pageHref({ ...filters, min: undefined }, 1)}>
+                desde {filters.min} ✕
+              </Link>
+            )}
+            {filters.max !== undefined && (
+              <Link href={pageHref({ ...filters, max: undefined }, 1)}>
+                hasta {filters.max} ✕
+              </Link>
+            )}
+            <Link className="clear-all" href="/">
+              Limpiar todo
+            </Link>
+          </div>
+        )}
+
         {items.length === 0 ? (
           <div className="empty-state">
             <p>
@@ -172,38 +209,37 @@ export default async function StorePage({
           </div>
         ) : (
           <ul className="product-grid">
-            {items.map((product) => (
-              <li key={product.id} className="product-card">
-                <a
-                  className="card-media"
-                  href={`/go/${product.id}`}
-                  target="_blank"
-                  rel="nofollow sponsored noopener"
-                  aria-label={product.title}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={product.imageUrl} alt={product.title} loading="lazy" />
-                  <span className="badge">{SOURCE_LABELS[product.source]}</span>
-                </a>
-                <h3>{product.title}</h3>
-                <p className="price">
-                  {formatPrice(product.price, product.currency)}
-                  {product.originalPrice && (
-                    <span className="original">
-                      {formatPrice(product.originalPrice, product.currency)}
-                    </span>
-                  )}
-                </p>
-                <a
-                  className="buy-link"
-                  href={`/go/${product.id}`}
-                  target="_blank"
-                  rel="nofollow sponsored noopener"
-                >
-                  Comprar en {SOURCE_LABELS[product.source]}
-                </a>
-              </li>
-            ))}
+            {items.map((product) => {
+              const fichaHref = `/producto/${product.slug ?? product.id}`;
+              const displayTitle = product.seoTitle ?? product.title;
+              return (
+                <li key={product.id} className="product-card">
+                  <Link
+                    className="card-media"
+                    href={fichaHref}
+                    aria-label={displayTitle}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={product.imageUrl} alt={displayTitle} loading="lazy" />
+                    <span className="badge">{SOURCE_LABELS[product.source]}</span>
+                  </Link>
+                  <h3>
+                    <Link href={fichaHref}>{displayTitle}</Link>
+                  </h3>
+                  <p className="price">
+                    {formatPrice(product.price, product.currency)}
+                    {product.originalPrice && (
+                      <span className="original">
+                        {formatPrice(product.originalPrice, product.currency)}
+                      </span>
+                    )}
+                  </p>
+                  <Link className="buy-link" href={fichaHref}>
+                    Ver la pieza
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
 

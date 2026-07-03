@@ -43,6 +43,12 @@ export const products = pgTable(
     productUrl: text("product_url"),
     category: text("category", { enum: CATEGORIES }).notNull().default("otros"),
     tags: text("tags").array().notNull().default([]),
+    // Ficha SEO generada por el agente (null hasta que se genera).
+    slug: text("slug"),
+    seoTitle: text("seo_title"),
+    seoDescription: text("seo_description"),
+    metaTitle: text("meta_title"),
+    metaDescription: text("meta_description"),
     available: boolean("available").notNull().default(true),
     isActive: boolean("is_active").notNull().default(true),
     clicks: integer("clicks").notNull().default(0),
@@ -57,6 +63,7 @@ export const products = pgTable(
     ),
     index("products_category_idx").on(table.category),
     index("products_last_checked_at_idx").on(table.lastCheckedAt),
+    uniqueIndex("products_slug_idx").on(table.slug),
   ]
 );
 

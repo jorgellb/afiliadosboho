@@ -465,6 +465,192 @@ button.secondary:hover:not(:disabled) {
   border-bottom-color: var(--ink);
 }
 
+.product-card h3 a {
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.product-card h3 a:hover {
+  color: var(--terracotta-dark);
+}
+
+/* Chips de filtros activos */
+.active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.9rem 0 0;
+}
+
+.active-filters a {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 1px solid var(--line);
+  background: #fffdf9;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  transition: all 0.2s;
+}
+
+.active-filters a:hover {
+  border-color: var(--terracotta);
+  color: var(--terracotta-dark);
+}
+
+.active-filters .clear-all {
+  border: none;
+  background: transparent;
+  color: var(--terracotta-dark);
+  text-decoration: underline;
+}
+
+/* ---------- Ficha de producto ---------- */
+
+.breadcrumb {
+  display: flex;
+  gap: 0.6rem;
+  padding: 1.4rem 0 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.breadcrumb a {
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--terracotta-dark);
+}
+
+.ficha {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  padding: clamp(1.5rem, 4vw, 3rem) 0 clamp(2rem, 5vw, 3.5rem);
+  border-bottom: 1px solid var(--line);
+}
+
+.ficha-media {
+  margin: 0;
+  position: relative;
+}
+
+.ficha-media img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  background: var(--paper-deep);
+}
+
+.ficha-discount {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: var(--terracotta);
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.1rem;
+  padding: 0.35rem 0.8rem;
+}
+
+.ficha-kicker {
+  margin: 0 0 0.8rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--terracotta-dark);
+}
+
+.ficha-body h1 {
+  margin: 0 0 1rem;
+  font-size: clamp(1.7rem, 4vw, 2.7rem);
+}
+
+.ficha-price {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0 0 1.4rem;
+}
+
+.ficha-price .original {
+  font-weight: 400;
+  text-decoration: line-through;
+  color: var(--ink-soft);
+  margin-left: 0.6rem;
+  font-size: 0.8em;
+}
+
+.ficha-copy {
+  max-width: 36rem;
+  color: var(--ink-soft);
+  margin-bottom: 1.8rem;
+}
+
+.ficha-copy p:first-child::first-letter {
+  font-family: var(--font-display);
+  font-size: 2.6em;
+  line-height: 0.8;
+  float: left;
+  padding-right: 0.35rem;
+  color: var(--terracotta-dark);
+}
+
+.ficha-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.8rem;
+}
+
+.ficha-details {
+  display: flex;
+  gap: 2.2rem;
+  flex-wrap: wrap;
+  margin: 0 0 1.4rem;
+  padding: 1.1rem 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.ficha-details dt {
+  font-size: 0.66rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.ficha-details dd {
+  margin: 0.15rem 0 0;
+  font-weight: 600;
+}
+
+.ficha-disclosure {
+  max-width: 34rem;
+}
+
+.related {
+  padding-top: clamp(1.6rem, 4vw, 2.6rem);
+}
+
+.related h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  margin: 0;
+}
+
+@media (max-width: 780px) {
+  .ficha {
+    grid-template-columns: 1fr;
+  }
+}
+
 .empty-state {
   padding: clamp(2.5rem, 6vw, 5rem) 0;
   text-align: center;
