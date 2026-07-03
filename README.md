@@ -22,6 +22,7 @@ precios y disponibilidad a diario.
 | `/admin` | Dashboard (protegido por contraseña) |
 | `/admin/search` | Buscar en Amazon/AliExpress y guardar productos |
 | `/admin/products` | Editar/borrar/refrescar productos y alta manual |
+| `/asistente` | Asistente de moda IA (NVIDIA `z-ai/glm-5.2` con tool calling) |
 | `/api/cron/refresh-prices` | Cron diario de precios (Bearer `CRON_SECRET`) |
 
 La lógica compartida vive en `lib/`: `db/` (esquema y cliente), `providers/`
@@ -66,6 +67,16 @@ La lógica compartida vive en `lib/`: `db/` (esquema y cliente), `providers/`
   `tracking_id`, que devuelve `promotion_link` por producto.
 - Si una API no está disponible, el **alta manual** en `/admin/products`
   permite añadir productos pegando la URL de afiliado y sus datos.
+
+## Asistente de moda
+
+El chat de `/asistente` usa la API de NVIDIA (modelo `z-ai/glm-5.2`,
+configurable con `NVIDIA_MODEL`) con dos herramientas: busca primero en el
+catálogo guardado y, si no hay suficientes opciones, busca en vivo en
+AliExpress y **autoguarda** los resultados en el catálogo (tag `asistente`),
+de modo que las recomendaciones siempre llevan enlace de afiliado con clic
+contado y la tienda crece con cada conversación. Si la API de NVIDIA está
+saturada responde 503 con mensaje claro (timeout de 55 s por llamada).
 
 ## Cron de precios
 
