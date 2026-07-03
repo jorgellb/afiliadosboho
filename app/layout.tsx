@@ -20,6 +20,7 @@ export default function RootLayout({
           <Link href="/" className="logo">
             Boho Chic
           </Link>
+          <Link href="/asistente">Asistente de moda ✨</Link>
         </header>
         <main>{children}</main>
         <footer className="site-footer">

@@ -242,3 +242,67 @@ form.stacked {
   color: #777;
   font-size: 0.85rem;
 }
+
+/* Asistente de moda */
+.chat-box {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 1rem;
+  min-height: 300px;
+  max-height: 60vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.chat-msg {
+  max-width: 85%;
+  padding: 0.5rem 0.8rem;
+  border-radius: 8px;
+}
+
+.chat-msg p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.chat-msg.user {
+  align-self: flex-end;
+  background: #222;
+  color: #fff;
+}
+
+.chat-msg.assistant {
+  align-self: flex-start;
+  background: #f2ede6;
+}
+
+.chat-products {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+}
+
+.chat-products .product-card {
+  background: #fff;
+}
+
+.chat-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chat-input {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chat-input input {
+  flex: 1;
+}

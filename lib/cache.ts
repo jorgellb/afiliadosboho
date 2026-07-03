@@ -55,3 +55,23 @@ export async function cacheSet<T>(
     // Ignorar errores de caché.
   }
 }
+
+/**
+ * Rate limit simple por clave (ventana fija). Sin Redis configurado no
+ * limita (devuelve true = permitido).
+ */
+export async function rateLimit(
+  key: string,
+  limit: number,
+  windowSeconds: number
+): Promise<boolean> {
+  if (!redis) return true;
+  try {
+    const k = `rl:${key}`;
+    const n = await redis.incr(k);
+    if (n === 1) await redis.expire(k, windowSeconds);
+    return n <= limit;
+  } catch {
+    return true;
+  }
+}
