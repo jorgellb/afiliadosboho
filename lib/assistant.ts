@@ -53,7 +53,7 @@ interface ToolCall {
   function: { name: string; arguments: string };
 }
 
-interface ApiMessage {
+export interface ApiMessage {
   role: string;
   content: string | null;
   tool_calls?: ToolCall[];
@@ -205,7 +205,10 @@ async function searchAliexpressAndSave(args: {
   return saved;
 }
 
-async function callModel(messages: ApiMessage[]): Promise<ApiMessage> {
+export async function callModel(
+  messages: ApiMessage[],
+  opts: { tools?: object[]; maxTokens?: number } = {}
+): Promise<ApiMessage> {
   const apiKey = process.env.NVIDIA_API_KEY;
   if (!apiKey) {
     throw new Error("Falta la variable de entorno NVIDIA_API_KEY");
@@ -221,11 +224,11 @@ async function callModel(messages: ApiMessage[]): Promise<ApiMessage> {
       body: JSON.stringify({
         model: MODEL,
         messages,
-        tools: [SEARCH_TOOL, ALIEXPRESS_TOOL],
+        ...(opts.tools ? { tools: opts.tools } : {}),
         temperature: 1,
         top_p: 1,
         // GLM es un modelo razonador: el límite debe cubrir razonamiento + respuesta.
-        max_tokens: 8192,
+        max_tokens: opts.maxTokens ?? 8192,
         stream: false,
       }),
       cache: "no-store",
@@ -272,7 +275,9 @@ export async function runAssistant(
   const collected = new Map<string, AssistantProduct>();
 
   for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-    const message = await callModel(messages);
+    const message = await callModel(messages, {
+      tools: [SEARCH_TOOL, ALIEXPRESS_TOOL],
+    });
 
     if (!message.tool_calls || message.tool_calls.length === 0) {
       return {

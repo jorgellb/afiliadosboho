@@ -1,5 +1,6 @@
 import { getAdminStats } from "@/lib/products";
 import { RefreshButton } from "./refresh-button";
+import { CurateButton } from "./curate-button";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       <RefreshButton />
+      <CurateButton />
 
       <h2>Últimos añadidos</h2>
       {recent.length === 0 ? (
