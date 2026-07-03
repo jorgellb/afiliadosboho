@@ -29,6 +29,9 @@ export async function POST(_request: Request, context: Context) {
     if (error instanceof ProviderError) {
       return NextResponse.json({ error: error.message }, { status: 502 });
     }
+    if (error instanceof Error && error.message.startsWith("Falta la variable de entorno")) {
+      return NextResponse.json({ error: error.message }, { status: 502 });
+    }
     console.error("Error refrescando producto:", error);
     return NextResponse.json(
       { error: "Error inesperado consultando el proveedor" },

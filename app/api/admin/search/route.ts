@@ -40,6 +40,9 @@ export async function GET(request: Request) {
     if (error instanceof ProviderError) {
       return NextResponse.json({ error: error.message }, { status: 502 });
     }
+    if (error instanceof Error && error.message.startsWith("Falta la variable de entorno")) {
+      return NextResponse.json({ error: error.message }, { status: 502 });
+    }
     console.error("Error en búsqueda admin:", error);
     return NextResponse.json(
       { error: "Error inesperado consultando el proveedor" },
