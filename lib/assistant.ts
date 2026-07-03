@@ -10,7 +10,7 @@ import { CATEGORIES, Category, products } from "@/lib/db/schema";
 
 const BASE_URL =
   process.env.NVIDIA_API_BASE_URL || "https://integrate.api.nvidia.com/v1";
-const MODEL = process.env.NVIDIA_MODEL || "meta/llama-3.3-70b-instruct";
+const MODEL = process.env.NVIDIA_MODEL || "z-ai/glm-5.2";
 const MAX_TOOL_ROUNDS = 3;
 const MAX_PRODUCTS = 8;
 
@@ -149,15 +149,16 @@ async function callModel(messages: ApiMessage[]): Promise<ApiMessage> {
         model: MODEL,
         messages,
         tools: [SEARCH_TOOL],
-        temperature: 0.2,
-        top_p: 0.7,
-        max_tokens: 512,
+        temperature: 1,
+        top_p: 1,
+        // GLM es un modelo razonador: el límite debe cubrir razonamiento + respuesta.
+        max_tokens: 8192,
         stream: false,
       }),
       cache: "no-store",
       // El endpoint gratuito de NVIDIA encola peticiones cuando está saturado;
       // cortamos antes de que Vercel mate la función con un 504 sin mensaje.
-      signal: AbortSignal.timeout(45_000),
+      signal: AbortSignal.timeout(55_000),
     });
   } catch (error) {
     if (error instanceof Error && error.name === "TimeoutError") {
@@ -178,6 +179,13 @@ async function callModel(messages: ApiMessage[]): Promise<ApiMessage> {
   };
   const message = data.choices?.[0]?.message;
   if (!message) throw new Error("API de NVIDIA: respuesta sin contenido");
+  // Los modelos razonadores pueden incrustar su razonamiento en el contenido;
+  // se elimina para que el usuario solo vea la respuesta final.
+  if (typeof message.content === "string") {
+    message.content = message.content
+      .replace(/<think>[\s\S]*?<\/think>/g, "")
+      .trim();
+  }
   return message;
 }
 
