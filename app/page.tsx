@@ -59,9 +59,13 @@ export default async function StorePage({
                 Explorar la tienda
               </a>
               <Link className="btn-ghost" href="/asistente">
-                Pedir consejo a la estilista ✨
+                Pedir consejo a la estilista ✦
               </Link>
             </div>
+            <p className="hero-meta">
+              {total} piezas · {CATEGORIES.length - 1} colecciones · curaduría
+              con inteligencia artificial
+            </p>
           </div>
           {collage.length > 0 && (
             <figure className="hero-collage">
@@ -72,19 +76,34 @@ export default async function StorePage({
                 <img className="col-b" src={collage[1].imageUrl} alt={collage[1].title} />
               )}
               <figcaption>boho</figcaption>
+              <span className="hero-stamp" aria-hidden>
+                nueva<br />edición
+              </span>
             </figure>
           )}
         </section>
       )}
 
+      {isPortada && (
+        <div className="marquee" aria-hidden>
+          <div className="marquee-track">
+            {[0, 1].map((n) => (
+              <span key={n}>
+                Nuevas piezas cada semana ✦ Crochet · Flecos · Bordados ✦
+                Curado con inteligencia artificial ✦ Vestidos que huelen a sal ✦
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       <nav className="collections" aria-label="Colecciones">
-        {CATEGORIES.filter((c) => c !== "otros").map((c, i) => (
+        {CATEGORIES.filter((c) => c !== "otros").map((c) => (
           <Link
             key={c}
             href={`/?category=${c}`}
             className={filters.category === c ? "active" : undefined}
           >
-            <sup>{String(i + 1).padStart(2, "0")}</sup>
             {c}
           </Link>
         ))}
@@ -104,61 +123,68 @@ export default async function StorePage({
           </span>
         </div>
 
-        <form className="filters" method="get" action="/">
-          <label>
-            Buscar
+        <div className="toolbar">
+          <form className="toolbar-form" method="get" action="/">
+            {filters.category && (
+              <input type="hidden" name="category" value={filters.category} />
+            )}
+            {filters.sort && filters.sort !== "recientes" && (
+              <input type="hidden" name="sort" value={filters.sort} />
+            )}
+            <span className="toolbar-glyph" aria-hidden>
+              ⌕
+            </span>
             <input
+              className="toolbar-search"
               type="search"
               name="q"
               defaultValue={filters.q ?? ""}
-              placeholder="vestido, kimono, crochet…"
+              placeholder="Busca una pieza: vestido, kimono, crochet…"
+              aria-label="Buscar en la tienda"
             />
-          </label>
-          <label>
-            Categoría
-            <select name="category" defaultValue={filters.category ?? ""}>
-              <option value="">Todas</option>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Precio
-            <span className="price-range">
+            <span className="toolbar-price">
               <input
                 type="number"
                 name="min"
                 min="0"
                 step="0.01"
-                placeholder="mín"
+                placeholder="€ mín"
                 aria-label="Precio mínimo"
                 defaultValue={filters.min ?? ""}
               />
-              –
+              <span aria-hidden>—</span>
               <input
                 type="number"
                 name="max"
                 min="0"
                 step="0.01"
-                placeholder="máx"
+                placeholder="€ máx"
                 aria-label="Precio máximo"
                 defaultValue={filters.max ?? ""}
               />
             </span>
-          </label>
-          <label>
-            Ordenar
-            <select name="sort" defaultValue={filters.sort ?? "recientes"}>
-              <option value="recientes">Más recientes</option>
-              <option value="precio_asc">Precio: menor a mayor</option>
-              <option value="precio_desc">Precio: mayor a menor</option>
-            </select>
-          </label>
-          <button type="submit">Filtrar</button>
-        </form>
+            <button type="submit">Aplicar</button>
+          </form>
+          <nav className="toolbar-sort" aria-label="Ordenar">
+            {(
+              [
+                ["recientes", "Recientes"],
+                ["precio_asc", "Precio ↑"],
+                ["precio_desc", "Precio ↓"],
+              ] as const
+            ).map(([value, label]) => (
+              <Link
+                key={value}
+                href={pageHref({ ...filters, sort: value }, 1)}
+                className={
+                  (filters.sort ?? "recientes") === value ? "active" : undefined
+                }
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+        </div>
 
         {(filters.q ||
           filters.category ||

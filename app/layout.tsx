@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Playfair_Display, Manrope } from "next/font/google";
+import { ChatWidget } from "./components/chat-widget";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -41,6 +42,9 @@ export default function RootLayout({
         </header>
         <main>{children}</main>
         <footer className="site-footer">
+          <p className="footer-wordmark" aria-hidden>
+            Boho Chic
+          </p>
           <div className="footer-grid">
             <div>
               <p className="footer-logo">Boho Chic</p>
@@ -68,6 +72,7 @@ export default function RootLayout({
             </div>
           </div>
         </footer>
+        <ChatWidget />
       </body>
     </html>
   );
