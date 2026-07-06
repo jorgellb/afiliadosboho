@@ -10,7 +10,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-export const SOURCES = ["amazon", "aliexpress"] as const;
+export const SOURCES = ["aliexpress"] as const;
 export type Source = (typeof SOURCES)[number];
 
 export const CATEGORIES = [
@@ -31,7 +31,7 @@ export const products = pgTable(
   "products",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    source: text("source", { enum: SOURCES }).notNull(),
+    source: text("source", { enum: SOURCES }).notNull().default("aliexpress"),
     sourceProductId: text("source_product_id").notNull(),
     title: text("title").notNull(),
     description: text("description"),

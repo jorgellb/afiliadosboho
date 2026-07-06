@@ -19,11 +19,6 @@ interface UiMessage {
   products?: AssistantProduct[];
 }
 
-const SOURCE_LABELS: Record<string, string> = {
-  amazon: "Amazon",
-  aliexpress: "AliExpress",
-};
-
 const SUGERENCIAS = [
   "¿Qué me pongo para una boda en la playa?",
   "Busco un vestido boho por menos de 30 €",
@@ -101,7 +96,6 @@ export default function AsistentePage() {
                   <li key={p.id} className="product-card">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={p.imageUrl} alt={p.title} loading="lazy" />
-                    <span className="badge">{SOURCE_LABELS[p.source] ?? p.source}</span>
                     <h3>{p.title}</h3>
                     <p className="price">
                       {p.price} {p.currency}

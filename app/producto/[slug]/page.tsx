@@ -7,7 +7,6 @@ import { SITE_NAME, SITE_URL } from "@/lib/site";
 export const dynamic = "force-dynamic";
 
 const SOURCE_LABELS: Record<string, string> = {
-  amazon: "Amazon",
   aliexpress: "AliExpress",
 };
 
@@ -181,7 +180,6 @@ export default async function ProductPage({ params }: Props) {
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.imageUrl} alt={p.seoTitle ?? p.title} loading="lazy" />
-                  <span className="badge">{SOURCE_LABELS[p.source]}</span>
                 </Link>
                 <h3>{p.seoTitle ?? p.title}</h3>
                 <p className="price">{formatPrice(p.price, p.currency)}</p>

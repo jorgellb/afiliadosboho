@@ -26,17 +26,11 @@ const bodySchema = z.object({
   available: z.boolean().default(true),
 });
 
-/** Deriva el ID de origen desde la URL (ASIN de Amazon o ID de item de AliExpress). */
-function deriveSourceProductId(
-  source: "amazon" | "aliexpress",
-  urls: (string | null | undefined)[]
-): string {
+/** Deriva el ID de origen desde la URL del item de AliExpress. */
+function deriveSourceProductId(urls: (string | null | undefined)[]): string {
   for (const url of urls) {
     if (!url) continue;
-    const match =
-      source === "amazon"
-        ? url.match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i)
-        : url.match(/\/item\/(\d+)\.html/);
+    const match = url.match(/\/item\/(\d+)\.html/);
     if (match) return match[1];
   }
   // Alta manual sin ID reconocible: ID estable derivado de la URL.
@@ -54,7 +48,7 @@ export async function POST(request: Request) {
   const data = parsed.data;
   const sourceProductId =
     data.sourceProductId ??
-    deriveSourceProductId(data.source, [data.productUrl, data.affiliateUrl]);
+    deriveSourceProductId([data.productUrl, data.affiliateUrl]);
 
   try {
     const product = await upsertProduct(

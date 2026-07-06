@@ -33,7 +33,7 @@ export function ManualAddForm() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        source: fd.get("source"),
+        source: "aliexpress",
         title: fd.get("title"),
         description: (fd.get("description") as string) || null,
         imageUrl: fd.get("imageUrl"),
@@ -64,13 +64,6 @@ export function ManualAddForm() {
 
   return (
     <form className="stacked" onSubmit={onSubmit}>
-      <label>
-        Tienda
-        <select name="source" required>
-          <option value="amazon">Amazon</option>
-          <option value="aliexpress">AliExpress</option>
-        </select>
-      </label>
       <label>
         Título
         <input name="title" required minLength={2} maxLength={500} />

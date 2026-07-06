@@ -5,7 +5,6 @@ import {
   Category,
   NewProduct,
   Product,
-  SOURCES,
   Source,
   products,
 } from "@/lib/db/schema";
@@ -16,7 +15,6 @@ export const PAGE_SIZE = 24;
 
 export interface StoreFilters {
   q?: string;
-  source?: Source;
   category?: Category;
   min?: number;
   max?: number;
@@ -41,12 +39,10 @@ export function parseStoreFilters(params: {
     const n = Number(v);
     return v !== undefined && Number.isFinite(n) && n >= 0 ? n : undefined;
   };
-  const source = one(params.source);
   const category = one(params.category);
   const sort = one(params.sort);
   return {
     q: one(params.q)?.trim().slice(0, 100) || undefined,
-    source: SOURCES.includes(source as Source) ? (source as Source) : undefined,
     category: CATEGORIES.includes(category as Category)
       ? (category as Category)
       : undefined,
@@ -63,7 +59,6 @@ function storeConditions(filters: StoreFilters) {
   if (filters.q) {
     conditions.push(ilike(products.title, `%${filters.q}%`));
   }
-  if (filters.source) conditions.push(eq(products.source, filters.source));
   if (filters.category) conditions.push(eq(products.category, filters.category));
   if (filters.min !== undefined)
     conditions.push(gte(products.price, filters.min.toFixed(2)));
@@ -77,7 +72,6 @@ export async function getStoreProducts(filters: StoreFilters): Promise<StoreResu
   const page = filters.page ?? 1;
   const cacheKey = `store:${JSON.stringify([
     filters.q ?? "",
-    filters.source ?? "",
     filters.category ?? "",
     filters.min ?? "",
     filters.max ?? "",
@@ -224,11 +218,33 @@ export async function upsertProduct(
   return row;
 }
 
+/** Campos editables desde el panel admin (todo salvo id, origen y métricas). */
+export type ProductPatch = Partial<
+  Pick<
+    Product,
+    | "title"
+    | "description"
+    | "imageUrl"
+    | "price"
+    | "originalPrice"
+    | "currency"
+    | "affiliateUrl"
+    | "productUrl"
+    | "category"
+    | "tags"
+    | "available"
+    | "isActive"
+    | "slug"
+    | "seoTitle"
+    | "seoDescription"
+    | "metaTitle"
+    | "metaDescription"
+  >
+>;
+
 export async function updateProduct(
   id: string,
-  patch: Partial<
-    Pick<Product, "category" | "tags" | "isActive" | "title" | "price">
-  >
+  patch: ProductPatch
 ): Promise<Product | undefined> {
   const [row] = await db
     .update(products)
@@ -320,12 +336,16 @@ export async function getAdminStats() {
     .select({ value: count() })
     .from(products)
     .where(eq(products.available, false));
+  const [{ value: missingSeoCount }] = await db
+    .select({ value: count() })
+    .from(products)
+    .where(sql`${products.seoTitle} IS NULL`);
   const recent = await db
     .select()
     .from(products)
     .orderBy(desc(products.createdAt))
     .limit(8);
-  return { totals, bySource, unavailableCount, recent };
+  return { totals, bySource, unavailableCount, missingSeoCount, recent };
 }
 
 /** Listado completo para la tabla del admin (sin filtro de visibilidad). */

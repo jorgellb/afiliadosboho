@@ -4,15 +4,9 @@ import { getStoreProducts, parseStoreFilters, StoreFilters } from "@/lib/product
 
 export const dynamic = "force-dynamic";
 
-const SOURCE_LABELS: Record<string, string> = {
-  amazon: "Amazon",
-  aliexpress: "AliExpress",
-};
-
 function pageHref(filters: StoreFilters, page: number): string {
   const params = new URLSearchParams();
   if (filters.q) params.set("q", filters.q);
-  if (filters.source) params.set("source", filters.source);
   if (filters.category) params.set("category", filters.category);
   if (filters.min !== undefined) params.set("min", String(filters.min));
   if (filters.max !== undefined) params.set("max", String(filters.max));
@@ -39,7 +33,6 @@ export default async function StorePage({
 
   const isPortada =
     !filters.q &&
-    !filters.source &&
     !filters.category &&
     filters.min === undefined &&
     filters.max === undefined &&
@@ -59,7 +52,7 @@ export default async function StorePage({
               Crochet, flecos, bordados y vestidos que huelen a sal. Una
               selección viva de moda bohemia, elegida a mano — y con ayuda de
               nuestra estilista de inteligencia artificial — entre miles de
-              prendas de Amazon y AliExpress.
+              prendas de AliExpress.
             </p>
             <div className="hero-actions">
               <a className="btn-primary" href="#tienda">
@@ -122,14 +115,6 @@ export default async function StorePage({
             />
           </label>
           <label>
-            Tienda
-            <select name="source" defaultValue={filters.source ?? ""}>
-              <option value="">Todas</option>
-              <option value="amazon">Amazon</option>
-              <option value="aliexpress">AliExpress</option>
-            </select>
-          </label>
-          <label>
             Categoría
             <select name="category" defaultValue={filters.category ?? ""}>
               <option value="">Todas</option>
@@ -141,12 +126,28 @@ export default async function StorePage({
             </select>
           </label>
           <label>
-            Precio mín.
-            <input type="number" name="min" min="0" step="0.01" defaultValue={filters.min ?? ""} />
-          </label>
-          <label>
-            Precio máx.
-            <input type="number" name="max" min="0" step="0.01" defaultValue={filters.max ?? ""} />
+            Precio
+            <span className="price-range">
+              <input
+                type="number"
+                name="min"
+                min="0"
+                step="0.01"
+                placeholder="mín"
+                aria-label="Precio mínimo"
+                defaultValue={filters.min ?? ""}
+              />
+              –
+              <input
+                type="number"
+                name="max"
+                min="0"
+                step="0.01"
+                placeholder="máx"
+                aria-label="Precio máximo"
+                defaultValue={filters.max ?? ""}
+              />
+            </span>
           </label>
           <label>
             Ordenar
@@ -160,7 +161,6 @@ export default async function StorePage({
         </form>
 
         {(filters.q ||
-          filters.source ||
           filters.category ||
           filters.min !== undefined ||
           filters.max !== undefined) && (
@@ -168,11 +168,6 @@ export default async function StorePage({
             {filters.q && (
               <Link href={pageHref({ ...filters, q: undefined }, 1)}>
                 “{filters.q}” ✕
-              </Link>
-            )}
-            {filters.source && (
-              <Link href={pageHref({ ...filters, source: undefined }, 1)}>
-                {SOURCE_LABELS[filters.source]} ✕
               </Link>
             )}
             {filters.category && (
@@ -221,7 +216,6 @@ export default async function StorePage({
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={product.imageUrl} alt={displayTitle} loading="lazy" />
-                    <span className="badge">{SOURCE_LABELS[product.source]}</span>
                   </Link>
                   <h3>
                     <Link href={fichaHref}>{displayTitle}</Link>

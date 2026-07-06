@@ -1,8 +1,7 @@
-# Boho Chic — Tienda de afiliados (Amazon + AliExpress)
+# Boho Chic — Tienda de afiliados de AliExpress
 
 Buscador y tienda de ropa estilo boho chic. Los productos se añaden desde un
-panel de administración que busca en las APIs de Amazon (PA-API 5.0) y
-AliExpress (Affiliate API), se guardan en Postgres (Neon) y se muestran en la
+panel de administración que busca en la AliExpress Affiliate API, se guardan en Postgres (Neon) y se muestran en la
 tienda pública con búsqueda, filtros y paginación. Un cron de Vercel refresca
 precios y disponibilidad a diario.
 
@@ -11,17 +10,18 @@ precios y disponibilidad a diario.
 - **Next.js (App Router) + TypeScript**, desplegado en Vercel
 - **Neon Postgres** con Drizzle ORM (`drizzle-kit` para migraciones)
 - **Upstash for Redis** (sucesor de Vercel KV, opcional) para caché de listados
-- Clientes propios de **Amazon PA-API 5.0** (firma SigV4) y **AliExpress Affiliate API**
+- Cliente propio de la **AliExpress Affiliate API** (firma del protocolo open platform)
 
 ## Estructura
 
 | Ruta | Descripción |
 | --- | --- |
-| `/` | Tienda pública: búsqueda, filtros (tienda, categoría, precio), orden y paginación |
+| `/` | Tienda pública: búsqueda, filtros (categoría, precio), orden y paginación |
 | `/go/[id]` | Redirección al enlace de afiliado + contador de clics |
 | `/admin` | Dashboard (protegido por contraseña) |
-| `/admin/search` | Buscar en Amazon/AliExpress y guardar productos |
-| `/admin/products` | Editar/borrar/refrescar productos y alta manual |
+| `/admin/search` | Buscar en AliExpress y guardar productos |
+| `/admin/products` | Tabla con filtros propios y alta manual |
+| `/admin/products/[id]` | Edición completa: producto, precios, estado y ficha SEO |
 | `/asistente` | Asistente de moda IA (NVIDIA `z-ai/glm-5.2` con tool calling) |
 | `/api/cron/refresh-prices` | Cron diario de precios (Bearer `CRON_SECRET`) |
 
@@ -57,12 +57,8 @@ La lógica compartida vive en `lib/`: `db/` (esquema y cliente), `providers/`
 4. Aplica el esquema a la base de datos de producción desde tu máquina:
    `DATABASE_URL=<cadena de Neon> npm run db:migrate`.
 
-## Notas sobre las APIs
+## Notas sobre la API
 
-- **Amazon PA-API**: el host/región/marketplace deben corresponder a tu cuenta
-  de Associates (por defecto EE. UU.). El límite base es ~1 petición/segundo;
-  si ves errores 429, espera y reintenta. `DetailPageURL` ya incluye tu
-  partner tag.
 - **AliExpress**: la búsqueda usa `aliexpress.affiliate.product.query` con tu
   `tracking_id`, que devuelve `promotion_link` por producto.
 - Si una API no está disponible, el **alta manual** en `/admin/products`

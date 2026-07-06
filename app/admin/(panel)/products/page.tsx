@@ -9,12 +9,13 @@ export default async function AdminProductsPage() {
 
   return (
     <>
-      <h1>Gestionar productos ({products.length})</h1>
+      <h1>Productos ({products.length})</h1>
       <ProductsTable
         products={products.map((p) => ({
           id: p.id,
-          source: p.source,
           title: p.title,
+          seoTitle: p.seoTitle,
+          slug: p.slug,
           imageUrl: p.imageUrl,
           price: p.price,
           currency: p.currency,
@@ -23,15 +24,19 @@ export default async function AdminProductsPage() {
           available: p.available,
           isActive: p.isActive,
           clicks: p.clicks,
+          hasSeo: p.seoTitle !== null,
           lastCheckedAt: p.lastCheckedAt.toISOString(),
         }))}
       />
-      <h2>Alta manual</h2>
-      <p className="muted">
-        Para productos que no aparezcan en la búsqueda o si una API falla. Pega
-        la URL de afiliado y los datos del producto.
-      </p>
-      <ManualAddForm />
+
+      <div className="admin-card">
+        <h2>Alta manual</h2>
+        <p className="muted">
+          Para productos de AliExpress que no aparezcan en la búsqueda. Pega la
+          URL de afiliado y los datos del producto.
+        </p>
+        <ManualAddForm />
+      </div>
     </>
   );
 }
