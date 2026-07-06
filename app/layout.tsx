@@ -18,7 +18,7 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: "Boho Chic — Tienda de moda boho",
   description:
-    "Buscador y tienda de ropa estilo boho chic con las mejores ofertas de Amazon y AliExpress.",
+    "Buscador y tienda de moda boho chic: vestidos, kimonos, faldas y accesorios seleccionados a los mejores precios.",
 };
 
 export default function RootLayout({

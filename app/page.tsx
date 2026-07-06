@@ -52,7 +52,7 @@ export default async function StorePage({
               Crochet, flecos, bordados y vestidos que huelen a sal. Una
               selección viva de moda bohemia, elegida a mano — y con ayuda de
               nuestra estilista de inteligencia artificial — entre miles de
-              prendas de AliExpress.
+              prendas.
             </p>
             <div className="hero-actions">
               <a className="btn-primary" href="#tienda">

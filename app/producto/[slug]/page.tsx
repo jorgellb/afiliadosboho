@@ -6,10 +6,6 @@ import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
-const SOURCE_LABELS: Record<string, string> = {
-  aliexpress: "AliExpress",
-};
-
 function formatPrice(price: string, currency: string): string {
   return new Intl.NumberFormat("es", { style: "currency", currency }).format(
     Number(price)
@@ -27,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     product.metaTitle ?? `${product.seoTitle ?? product.title} | ${SITE_NAME}`;
   const description =
     product.metaDescription ??
-    `${(product.seoTitle ?? product.title).slice(0, 90)} al mejor precio en ${SITE_NAME}. Moda boho seleccionada de ${SOURCE_LABELS[product.source]}.`;
+    `${(product.seoTitle ?? product.title).slice(0, 90)} al mejor precio en ${SITE_NAME}. Moda boho seleccionada pieza a pieza.`;
   const canonical = `${SITE_URL}/producto/${product.slug ?? product.id}`;
 
   return {
@@ -101,9 +97,7 @@ export default async function ProductPage({ params }: Props) {
         </figure>
 
         <div className="ficha-body">
-          <p className="ficha-kicker">
-            {product.category} · {SOURCE_LABELS[product.source]}
-          </p>
+          <p className="ficha-kicker">Colección · {product.category}</p>
           <h1>{displayTitle}</h1>
           <p className="ficha-price">
             {formatPrice(product.price, product.currency)}
@@ -124,8 +118,7 @@ export default async function ProductPage({ params }: Props) {
             <div className="ficha-copy">
               <p className="muted">
                 Una pieza {product.category !== "otros" ? `de ${product.category} ` : ""}
-                de nuestra selección boho, disponible en{" "}
-                {SOURCE_LABELS[product.source]}.
+                de nuestra selección boho.
               </p>
             </div>
           )}
@@ -137,7 +130,7 @@ export default async function ProductPage({ params }: Props) {
               target="_blank"
               rel="nofollow sponsored noopener"
             >
-              Comprar en {SOURCE_LABELS[product.source]} →
+              Comprar esta pieza →
             </a>
             {!product.available && (
               <span className="error-msg">Agotado temporalmente</span>
@@ -145,10 +138,6 @@ export default async function ProductPage({ params }: Props) {
           </div>
 
           <dl className="ficha-details">
-            <div>
-              <dt>Tienda</dt>
-              <dd>{SOURCE_LABELS[product.source]}</dd>
-            </div>
             <div>
               <dt>Colección</dt>
               <dd>{product.category}</dd>
@@ -160,9 +149,8 @@ export default async function ProductPage({ params }: Props) {
           </dl>
 
           <p className="muted ficha-disclosure">
-            Enlace de afiliado: la compra se completa en{" "}
-            {SOURCE_LABELS[product.source]} y puede generarnos una comisión sin
-            coste extra para ti.
+            La compra se completa en la web de nuestro socio comercial y
+            puede generarnos una comisión sin coste extra para ti.
           </p>
         </div>
       </article>
