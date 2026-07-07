@@ -1,9 +1,12 @@
+import { sql } from "drizzle-orm";
 import {
+  bigserial,
   boolean,
   index,
   integer,
   numeric,
   pgTable,
+  real,
   text,
   timestamp,
   uniqueIndex,
@@ -124,3 +127,78 @@ export const articles = pgTable(
 
 export type Article = typeof articles.$inferSelect;
 export type NewArticle = typeof articles.$inferInsert;
+
+// ============================================================
+// Probador Boho Virtual
+// ============================================================
+
+/** Clasificación visual cacheada de cada producto para el probador. */
+export const productTryonAssets = pgTable(
+  "product_tryon_assets",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    productId: text("product_id").notNull().unique(),
+    category: text("category"), // 'garment' | 'accessory'
+    subcategory: text("subcategory"),
+    originalUrl: text("original_url"),
+    cleanUrl: text("clean_url"),
+    anchorPoint: text("anchor_point"), // left_ear|right_ear|neck|head|face|null
+    widthRatio: real("width_ratio"),
+    colors: text("colors").array(),
+    styleTags: text("style_tags").array(),
+    visionUsed: boolean("vision_used").notNull().default(true),
+    status: text("status").notNull().default("pending"), // pending|processing|ready|failed
+    errorMsg: text("error_msg"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+  },
+  (table) => [index("product_tryon_assets_status_idx").on(table.status)]
+);
+
+export type TryonAsset = typeof productTryonAssets.$inferSelect;
+
+/** Trabajos de try-on generativo de ropa (fase C, aún no activa). */
+export const tryonJobs = pgTable(
+  "tryon_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    productId: text("product_id").notNull(),
+    sessionId: text("session_id").notNull(),
+    userPhotoUrl: text("user_photo_url").notNull(),
+    resultUrl: text("result_url"),
+    provider: text("provider"),
+    status: text("status").notNull().default("queued"), // queued|processing|done|failed
+    errorMsg: text("error_msg"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true })
+      .notNull()
+      .default(sql`now() + interval '24 hours'`),
+  },
+  (table) => [
+    index("tryon_jobs_status_created_idx").on(table.status, table.createdAt),
+    index("tryon_jobs_session_idx").on(table.sessionId),
+  ]
+);
+
+/** Sugerencias de la estilista IA asociadas a un job (fase C). */
+export const stylistSuggestions = pgTable("stylist_suggestions", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  jobId: uuid("job_id").references(() => tryonJobs.id, { onDelete: "cascade" }),
+  productId: text("product_id").notNull(),
+  reason: text("reason"),
+  clicked: boolean("clicked").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Looks compartidos públicamente (fase E). */
+export const sharedLooks = pgTable("shared_looks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  jobId: uuid("job_id"),
+  imageUrl: text("image_url").notNull(),
+  productIds: text("product_ids").array().notNull(),
+  slug: text("slug").notNull().unique(),
+  views: integer("views").notNull().default(0),
+  clicks: integer("clicks").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

@@ -74,6 +74,30 @@ de modo que las recomendaciones siempre llevan enlace de afiliado con clic
 contado y la tienda crece con cada conversación. Si la API de NVIDIA está
 saturada responde 503 con mensaje claro (timeout de 55 s por llamada).
 
+## Probador Boho Virtual
+
+Prueba de accesorios en tiempo real, sin coste y sin registro. Flujo:
+
+1. En la ficha de una pieza de **joyería o accesorios** aparece el botón
+   "Probártelo con la cámara".
+2. `POST /api/products/prepare` clasifica el producto con la IA multimodal de
+   NVIDIA (cadena `lib/nvidia.ts`: llama-4-maverick → minimax-m3 → nemotron) y
+   **cachea** el resultado en `product_tryon_assets` (categoría, `anchor_point`,
+   `width_ratio`…). No se reprocesa dos veces; si los modelos con visión fallan,
+   degrada a clasificación por título (`vision_used=false`).
+3. `<ARTryOn>` usa MediaPipe FaceLandmarker + webcam y superpone el accesorio
+   (recortado con WASM en el navegador) sobre orejas/cuello/cara/cabeza según su
+   ancla. **Todo ocurre en el dispositivo**: ni la cámara ni la foto salen de él.
+   Si se deniega la cámara, se puede probar sobre una foto subida.
+4. Botón "Capturar look" exporta la imagen. La imagen del producto se sirve por
+   `/api/tryon/image` (proxy same-origin) para poder dibujarla en el canvas.
+5. La **estilista IA** (`/api/tryon/stylist`) sugiere 3 complementos reales del
+   catálogo con enlace de afiliado.
+
+Fases preparadas pero no activas (necesitan claves): try-on generativo de ropa
+(Fashn.ai / Replicate + Vercel Blob) y looks compartidos. Sus tablas
+(`tryon_jobs`, `stylist_suggestions`, `shared_looks`) ya existen.
+
 ## Cron de precios
 
 Cada ejecución toma los ~40 productos con el chequeo más antiguo, consulta sus

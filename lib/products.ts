@@ -437,6 +437,27 @@ export async function getAllProductsForAdmin(): Promise<Product[]> {
   return db.select().from(products).orderBy(desc(products.createdAt));
 }
 
+/** Candidatos complementarios (para la estilista del probador). */
+export async function getComplementaryProducts(
+  product: Product,
+  limit: number = 30
+): Promise<Product[]> {
+  const wanted = LOOK_MATCHES[product.category] ?? LOOK_MATCHES.otros;
+  return db
+    .select()
+    .from(products)
+    .where(
+      and(
+        inArray(products.category, wanted),
+        eq(products.isActive, true),
+        eq(products.available, true),
+        ne(products.id, product.id)
+      )
+    )
+    .orderBy(desc(products.clicks), desc(products.discountPct))
+    .limit(limit);
+}
+
 /** Feed personalizado para el resultado del quiz de estilo. */
 export async function getProductsByProfile(
   categories: Category[],
