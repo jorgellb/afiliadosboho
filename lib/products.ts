@@ -1,8 +1,9 @@
-import { and, asc, count, desc, eq, gte, ilike, lte, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, inArray, lte, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import {
   CATEGORIES,
   Category,
+  clickEvents,
   NewProduct,
   Product,
   Source,
@@ -193,6 +194,9 @@ export async function upsertProduct(
     available: normalized.available,
     category: extras.category ?? "otros",
     tags: extras.tags ?? [],
+    rating: normalized.rating,
+    ordersCount: normalized.ordersCount,
+    discountPct: normalized.discountPct,
   };
   const [row] = await db
     .insert(products)
@@ -209,6 +213,9 @@ export async function upsertProduct(
         affiliateUrl: values.affiliateUrl,
         productUrl: values.productUrl,
         available: values.available,
+        rating: values.rating,
+        ordersCount: values.ordersCount,
+        discountPct: values.discountPct,
         updatedAt: sql`now()`,
         lastCheckedAt: sql`now()`,
       },
@@ -270,6 +277,68 @@ export async function incrementClicks(id: string): Promise<void> {
     .where(eq(products.id, id));
 }
 
+/** Registra un clic de afiliado con su fuente (ficha, look, quiz, home…). */
+export async function recordClick(id: string, source: string): Promise<void> {
+  await Promise.all([
+    incrementClicks(id),
+    db.insert(clickEvents).values({ productId: id, source: source.slice(0, 40) }),
+  ]);
+}
+
+// Piezas que combinan con cada categoría, en orden de preferencia editorial.
+const LOOK_MATCHES: Record<Category, Category[]> = {
+  vestidos: ["kimonos", "bolsos", "calzado", "joyeria", "accesorios"],
+  blusas: ["faldas", "pantalones", "bolsos", "joyeria", "calzado"],
+  faldas: ["blusas", "bolsos", "calzado", "joyeria", "kimonos"],
+  pantalones: ["blusas", "kimonos", "bolsos", "calzado", "joyeria"],
+  kimonos: ["vestidos", "blusas", "bolsos", "joyeria", "calzado"],
+  accesorios: ["vestidos", "bolsos", "joyeria", "calzado", "kimonos"],
+  bolsos: ["vestidos", "faldas", "calzado", "joyeria", "kimonos"],
+  calzado: ["vestidos", "faldas", "bolsos", "joyeria", "kimonos"],
+  joyeria: ["vestidos", "blusas", "bolsos", "kimonos", "faldas"],
+  otros: ["vestidos", "bolsos", "joyeria", "calzado", "kimonos"],
+};
+
+/**
+ * Ensambla un "look" completo alrededor de un producto: una pieza de cada
+ * categoría complementaria, priorizando las más populares. Sin llamada a IA
+ * (rápido y gratis en cada visita); la lógica de combinación vive aquí.
+ */
+export async function getLookForProduct(
+  product: Product,
+  limit: number = 4
+): Promise<Product[]> {
+  const wanted = LOOK_MATCHES[product.category] ?? LOOK_MATCHES.otros;
+  const candidates = await db
+    .select()
+    .from(products)
+    .where(
+      and(
+        inArray(products.category, wanted),
+        eq(products.isActive, true),
+        eq(products.available, true),
+        ne(products.id, product.id)
+      )
+    )
+    .orderBy(desc(products.clicks), desc(products.createdAt))
+    .limit(60);
+
+  const look: Product[] = [];
+  const usedCategories = new Set<string>();
+  // Una pieza por categoría, siguiendo el orden de preferencia.
+  for (const category of wanted) {
+    if (look.length >= limit) break;
+    const pick = candidates.find(
+      (c) => c.category === category && !usedCategories.has(c.category)
+    );
+    if (pick) {
+      look.push(pick);
+      usedCategories.add(category);
+    }
+  }
+  return look;
+}
+
 /** Productos con el chequeo de precio más antiguo, para el cron. */
 export async function getStalestProducts(limit: number): Promise<Product[]> {
   return db
@@ -299,6 +368,10 @@ export async function applyPriceRefresh(
           originalPrice: fresh.originalPrice,
           affiliateUrl: fresh.affiliateUrl,
           available: fresh.available,
+          // Solo se sobrescribe la prueba social si el refresco la aporta.
+          ...(fresh.discountPct !== null ? { discountPct: fresh.discountPct } : {}),
+          ...(fresh.rating !== null ? { rating: fresh.rating } : {}),
+          ...(fresh.ordersCount !== null ? { ordersCount: fresh.ordersCount } : {}),
           updatedAt: sql`now()`,
           lastCheckedAt: sql`now()`,
         })

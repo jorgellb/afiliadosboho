@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CATEGORIES } from "@/lib/db/schema";
 import { getStoreProducts, parseStoreFilters, StoreFilters } from "@/lib/products";
+import { DiscountBadge, SocialRow } from "./components/social-proof";
 
 export const dynamic = "force-dynamic";
 
@@ -242,10 +243,16 @@ export default async function StorePage({
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={product.imageUrl} alt={displayTitle} loading="lazy" />
+                    <DiscountBadge discountPct={product.discountPct} />
                   </Link>
                   <h3>
                     <Link href={fichaHref}>{displayTitle}</Link>
                   </h3>
+                  <SocialRow
+                    rating={product.rating}
+                    ordersCount={product.ordersCount}
+                    discountPct={product.discountPct}
+                  />
                   <p className="price">
                     {formatPrice(product.price, product.currency)}
                     {product.originalPrice && (

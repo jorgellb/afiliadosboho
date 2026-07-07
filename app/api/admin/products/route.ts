@@ -64,6 +64,11 @@ export async function POST(request: Request) {
         affiliateUrl: data.affiliateUrl,
         productUrl: data.productUrl ?? null,
         available: data.available,
+        rating: null,
+        ordersCount: null,
+        discountPct: data.originalPrice
+          ? Math.round((1 - Number(data.price) / Number(data.originalPrice)) * 100) || null
+          : null,
       },
       { category: data.category, tags: data.tags }
     );

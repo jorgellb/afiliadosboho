@@ -15,6 +15,13 @@
       "when": 1783098460351,
       "tag": "0001_known_domino",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783427272391,
+      "tag": "0002_wild_lethal_legion",
+      "breakpoints": true
     }
   ]
 }

@@ -13,6 +13,10 @@ export interface NormalizedProduct {
   affiliateUrl: string;
   productUrl: string | null;
   available: boolean;
+  // Prueba social (null si el proveedor no la aporta).
+  rating: string | null; // % de valoraciones positivas 0-100
+  ordersCount: number | null; // unidades vendidas recientes
+  discountPct: number | null; // % de descuento
 }
 
 export interface ProductProvider {

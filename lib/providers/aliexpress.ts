@@ -25,6 +25,9 @@ interface AliProduct {
   target_original_price?: string;
   promotion_link?: string;
   product_detail_url?: string;
+  evaluate_rate?: string; // "96.5%"
+  lastest_volume?: number;
+  discount?: string; // "52%"
 }
 
 function config() {
@@ -106,6 +109,13 @@ function extractProducts(
   return respResult.result?.products?.product ?? [];
 }
 
+/** Extrae un porcentaje ("52%", "96.5%") a número entero/decimal, o null. */
+function parsePct(value: string | undefined): number | null {
+  if (!value) return null;
+  const n = Number(value.replace("%", "").trim());
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 function normalizeProduct(p: AliProduct): NormalizedProduct | null {
   const id = p.product_id !== undefined ? String(p.product_id) : null;
   if (!id || !p.product_title || !p.product_main_image_url) return null;
@@ -114,6 +124,21 @@ function normalizeProduct(p: AliProduct): NormalizedProduct | null {
 
   const price = p.target_sale_price ? Number(p.target_sale_price) : NaN;
   const original = p.target_original_price ? Number(p.target_original_price) : NaN;
+  const originalPrice =
+    Number.isFinite(original) && Number.isFinite(price) && original > price
+      ? original.toFixed(2)
+      : null;
+
+  // Descuento: primero el del API; si no, calculado sobre el precio original.
+  let discountPct = parsePct(p.discount);
+  if (discountPct === null && originalPrice) {
+    discountPct = Math.round((1 - price / Number(originalPrice)) * 100) || null;
+  }
+  const rating = parsePct(p.evaluate_rate);
+  const orders =
+    typeof p.lastest_volume === "number" && p.lastest_volume > 0
+      ? p.lastest_volume
+      : null;
 
   return {
     source: "aliexpress",
@@ -123,13 +148,13 @@ function normalizeProduct(p: AliProduct): NormalizedProduct | null {
     imageUrl: p.product_main_image_url,
     price: Number.isFinite(price) ? price.toFixed(2) : null,
     currency: p.target_sale_price_currency || config().currency,
-    originalPrice:
-      Number.isFinite(original) && Number.isFinite(price) && original > price
-        ? original.toFixed(2)
-        : null,
+    originalPrice,
     affiliateUrl,
     productUrl: p.product_detail_url ?? null,
     available: Number.isFinite(price),
+    rating: rating !== null ? rating.toFixed(1) : null,
+    ordersCount: orders,
+    discountPct: discountPct !== null ? Math.round(discountPct) : null,
   };
 }
 
@@ -138,7 +163,9 @@ export const aliexpressProvider: ProductProvider = {
 
   async search(query: string, page: number): Promise<NormalizedProduct[]> {
     const { trackingId, currency, language, shipTo } = config();
-    const data = await aliRequest("aliexpress.affiliate.product.query", {
+    // hotproduct.query prioriza productos que se venden y aporta descuento y,
+    // cuando existe, valoración; mejor para una tienda de afiliados.
+    const data = await aliRequest("aliexpress.affiliate.hotproduct.query", {
       keywords: query,
       page_no: String(Math.max(page, 1)),
       page_size: "20",
@@ -147,7 +174,7 @@ export const aliexpressProvider: ProductProvider = {
       target_language: language,
       ...(shipTo ? { ship_to_country: shipTo } : {}),
     });
-    return extractProducts(data, "aliexpress_affiliate_product_query_response")
+    return extractProducts(data, "aliexpress_affiliate_hotproduct_query_response")
       .map(normalizeProduct)
       .filter((p): p is NormalizedProduct => p !== null);
   },
