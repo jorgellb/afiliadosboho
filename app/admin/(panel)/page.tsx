@@ -3,11 +3,12 @@ import { getAdminStats } from "@/lib/products";
 import { RefreshButton } from "./refresh-button";
 import { CurateButton } from "./curate-button";
 import { SeoButton } from "./seo-button";
+import { ContentButton } from "./content-button";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
-  const { totals, unavailableCount, missingSeoCount, recent } =
+  const { totals, unavailableCount, missingSeoCount, subscribersCount, recent } =
     await getAdminStats();
 
   return (
@@ -26,6 +27,9 @@ export default async function AdminDashboardPage() {
         <div className="stat">
           <strong>{missingSeoCount}</strong> sin ficha SEO
         </div>
+        <div className="stat">
+          <strong>{subscribersCount}</strong> suscriptores
+        </div>
       </div>
 
       <div className="admin-card">
@@ -36,6 +40,7 @@ export default async function AdminDashboardPage() {
         </p>
         <CurateButton />
         <SeoButton />
+        <ContentButton />
         <RefreshButton />
       </div>
 

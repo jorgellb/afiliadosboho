@@ -1386,6 +1386,275 @@ button.secondary:hover:not(:disabled) {
   padding: 0.2rem 0.1rem;
 }
 
+/* ---------- Quiz de estilo ---------- */
+
+.quiz {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: clamp(1.6rem, 5vw, 3.4rem) 0;
+  animation: fade-in 0.4s ease both;
+}
+
+.quiz-progress {
+  height: 2px;
+  background: var(--line);
+  margin: 0.6rem 0 2rem;
+}
+
+.quiz-progress span {
+  display: block;
+  height: 100%;
+  background: var(--terracotta);
+  transition: width 0.4s ease;
+}
+
+.quiz-question {
+  font-size: clamp(1.9rem, 5vw, 3rem);
+  margin: 0 0 1.6rem;
+}
+
+.quiz-options {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.quiz-options button {
+  width: 100%;
+  text-align: left;
+  background: #fffdf8;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  padding: 1rem 1.2rem;
+  font-size: 1rem;
+  letter-spacing: 0;
+  text-transform: none;
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+}
+
+.quiz-options button:hover:not(:disabled) {
+  border-color: var(--terracotta);
+  background: var(--paper);
+  transform: translateX(4px);
+  color: var(--ink);
+}
+
+.quiz-back {
+  margin-top: 1.4rem;
+}
+
+.quiz-loading {
+  text-align: center;
+  padding: 4rem 0;
+}
+
+.quiz-result-name {
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  font-style: italic;
+  color: var(--terracotta-dark);
+  margin: 0.3rem 0 0.6rem;
+}
+
+.quiz-tagline {
+  font-size: 1.15rem;
+  color: var(--ink-soft);
+  max-width: 40rem;
+  margin: 0 0 2rem;
+}
+
+.quiz-capture {
+  border: 1px solid var(--ink);
+  background: var(--paper-deep);
+  padding: 1.2rem 1.4rem;
+  margin-bottom: 2.4rem;
+}
+
+.quiz-capture label {
+  display: block;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 0.6rem;
+}
+
+.quiz-capture-row {
+  display: flex;
+  gap: 0.7rem;
+}
+
+.quiz-capture-row input {
+  flex: 1;
+  border: none;
+  border-bottom: 1px solid var(--ink);
+  background: transparent;
+  font-size: 1rem;
+  padding: 0.5rem 0.1rem;
+}
+
+.quiz-feed-title {
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  border-top: 1px solid var(--line);
+  padding-top: 1.6rem;
+  margin: 0 0 0.4rem;
+}
+
+.quiz-restart {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+/* ---------- Revista (contenido SEO) ---------- */
+
+.revista-head {
+  padding: clamp(2rem, 5vw, 3.6rem) 0 1.6rem;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+}
+
+.revista-head h1 {
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  margin: 0.4rem 0 0.6rem;
+}
+
+.article-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: clamp(1.4rem, 3vw, 2.4rem);
+  list-style: none;
+  padding: clamp(1.6rem, 3vw, 2.4rem) 0;
+  margin: 0;
+}
+
+.article-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  background: #fffdf8;
+}
+
+.article-card a.article-cover {
+  display: block;
+  overflow: hidden;
+}
+
+.article-card img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.article-card:hover img {
+  transform: scale(1.04);
+}
+
+.article-card-body {
+  padding: 1.1rem 1.3rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.article-cat {
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--terracotta-dark);
+}
+
+.article-card h2 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+.article-card h2 a {
+  text-decoration: none;
+}
+
+.article-card h2 a:hover {
+  color: var(--terracotta-dark);
+}
+
+.article-card p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+}
+
+.article-read {
+  margin-top: auto;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--terracotta-dark);
+  text-decoration: none;
+}
+
+/* Artículo individual */
+.article {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: clamp(1.4rem, 4vw, 2.6rem) 0;
+}
+
+.article-hero {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  margin-bottom: 1.6rem;
+}
+
+.article h1 {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  margin: 0.4rem 0 1.2rem;
+}
+
+.article-prose {
+  font-size: 1.06rem;
+  line-height: 1.75;
+}
+
+.article-prose h2 {
+  font-size: 1.5rem;
+  margin: 2rem 0 0.6rem;
+}
+
+.article-prose h3 {
+  font-size: 1.2rem;
+  margin: 1.6rem 0 0.5rem;
+}
+
+.article-prose p {
+  margin: 0 0 1rem;
+}
+
+.article-prose a {
+  color: var(--terracotta-dark);
+  text-decoration: underline;
+}
+
+.article-prose ul {
+  margin: 0 0 1rem;
+  padding-left: 1.2rem;
+}
+
+.article-products {
+  border-top: 1px solid var(--line);
+  margin-top: 2.4rem;
+  padding-top: 1.6rem;
+}
+
+.article-products h2 {
+  font-size: 1.5rem;
+  margin: 0 0 0.4rem;
+}
+
 /* ---------- Panel de administración ---------- */
 
 .admin-shell {

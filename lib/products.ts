@@ -8,6 +8,7 @@ import {
   Product,
   Source,
   products,
+  subscribers,
 } from "@/lib/db/schema";
 import { bumpCacheVersion, cacheGet, cacheSet } from "@/lib/cache";
 import type { NormalizedProduct } from "@/lib/providers";
@@ -413,17 +414,75 @@ export async function getAdminStats() {
     .select({ value: count() })
     .from(products)
     .where(sql`${products.seoTitle} IS NULL`);
+  const [{ value: subscribersCount }] = await db
+    .select({ value: count() })
+    .from(subscribers);
   const recent = await db
     .select()
     .from(products)
     .orderBy(desc(products.createdAt))
     .limit(8);
-  return { totals, bySource, unavailableCount, missingSeoCount, recent };
+  return {
+    totals,
+    bySource,
+    unavailableCount,
+    missingSeoCount,
+    subscribersCount,
+    recent,
+  };
 }
 
 /** Listado completo para la tabla del admin (sin filtro de visibilidad). */
 export async function getAllProductsForAdmin(): Promise<Product[]> {
   return db.select().from(products).orderBy(desc(products.createdAt));
+}
+
+/** Feed personalizado para el resultado del quiz de estilo. */
+export async function getProductsByProfile(
+  categories: Category[],
+  maxPrice: number | null,
+  limit: number = 12
+): Promise<Product[]> {
+  const base = [eq(products.isActive, true), eq(products.available, true)];
+  if (maxPrice !== null) base.push(lte(products.price, maxPrice.toFixed(2)));
+
+  const withCategory =
+    categories.length > 0
+      ? [...base, inArray(products.category, categories)]
+      : base;
+
+  const rows = await db
+    .select()
+    .from(products)
+    .where(and(...withCategory))
+    .orderBy(desc(products.discountPct), desc(products.clicks))
+    .limit(limit);
+
+  // Si el filtro deja pocas piezas, se completa sin restringir categoría.
+  if (rows.length >= Math.min(limit, 6) || categories.length === 0) return rows;
+  const extra = await db
+    .select()
+    .from(products)
+    .where(and(...base))
+    .orderBy(desc(products.discountPct), desc(products.clicks))
+    .limit(limit);
+  const seen = new Set(rows.map((r) => r.id));
+  return [...rows, ...extra.filter((r) => !seen.has(r.id))].slice(0, limit);
+}
+
+/** Guarda un suscriptor (quiz o newsletter); ignora si el email ya existe. */
+export async function addSubscriber(
+  email: string,
+  source: string,
+  styleResult: string | null
+): Promise<void> {
+  await db
+    .insert(subscribers)
+    .values({ email: email.toLowerCase(), source, styleResult })
+    .onConflictDoUpdate({
+      target: subscribers.email,
+      set: { styleResult, source },
+    });
 }
 
 /** IDs de origen ya guardados, para marcar duplicados en la búsqueda admin. */

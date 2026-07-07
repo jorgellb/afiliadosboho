@@ -37,7 +37,11 @@ export default function RootLayout({
           <nav className="masthead-nav">
             <Link href="/">La tienda</Link>
             <span aria-hidden>·</span>
-            <Link href="/asistente">Asistente de moda</Link>
+            <Link href="/quiz">Tu estilo</Link>
+            <span aria-hidden>·</span>
+            <Link href="/revista">Revista</Link>
+            <span aria-hidden>·</span>
+            <Link href="/asistente">Estilista</Link>
           </nav>
         </header>
         <main>{children}</main>
