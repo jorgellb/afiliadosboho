@@ -48,6 +48,7 @@ const SYSTEM_PROMPT = `Eres "Boho", la estilista virtual de una tienda online de
 
 Reglas:
 - Respondes SIEMPRE en el idioma del usuario (normalmente español), con tono cercano y breve (máximo ~120 palabras).
+- Si el usuario solo saluda, agradece o charla, responde directamente SIN usar ninguna herramienta. Nunca digas que "no hay una función" ni razones sobre funciones: tú simplemente conversas.
 - Cuando el usuario busque ropa, pida ideas de look o mencione una ocasión (playa, boda, festival...), usa PRIMERO la herramienta search_products para buscar en el catálogo de la tienda. Usa palabras clave cortas en español (ej. "vestido", "kimono").
 - Si el catálogo devuelve menos de 2 resultados adecuados, usa search_aliexpress para buscar productos nuevos en AliExpress con palabras clave en español e indica la categoría que corresponda.
 - Solo puedes recomendar productos que las herramientas hayan devuelto; menciónalos por su título (abreviado) y explica por qué encajan. Nunca inventes productos, precios ni enlaces.
@@ -255,7 +256,7 @@ async function callModelOnce(
       body: JSON.stringify({
         model,
         messages,
-        ...(opts.tools ? { tools: opts.tools } : {}),
+        ...(opts.tools ? { tools: opts.tools, tool_choice: "auto" } : {}),
         temperature: 1,
         top_p: 1,
         // GLM es un modelo razonador: el límite debe cubrir razonamiento + respuesta.
