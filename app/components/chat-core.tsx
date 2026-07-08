@@ -12,19 +12,28 @@ interface AssistantProduct {
   imageUrl: string;
   category: string;
   source: string;
+  discountPct: number | null;
+  rating: string | null;
+  ordersCount: number | null;
 }
 
 interface UiMessage {
   role: "user" | "assistant";
   content: string;
   products?: AssistantProduct[];
+  suggestions?: string[];
 }
 
 const SUGERENCIAS = [
   "¿Qué me pongo para una boda en la playa?",
+  "Móntame un look boho para un festival",
   "Busco un vestido boho por menos de 30 €",
-  "¿Cómo combino un kimono?",
 ];
+
+function formatOrders(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`;
+  return String(n);
+}
 
 /**
  * Núcleo del chat de la estilista. `compact` activa la variante para el
@@ -67,7 +76,12 @@ export function ChatCore({ compact = false }: { compact?: boolean }) {
       } else {
         setMessages([
           ...next,
-          { role: "assistant", content: data.reply, products: data.products },
+          {
+            role: "assistant",
+            content: data.reply,
+            products: data.products,
+            suggestions: data.suggestions,
+          },
         ]);
       }
     } catch {
@@ -78,6 +92,13 @@ export function ChatCore({ compact = false }: { compact?: boolean }) {
     }
   }
 
+  const lastAssistant =
+    !loading &&
+    messages.length > 0 &&
+    messages[messages.length - 1].role === "assistant"
+      ? messages[messages.length - 1]
+      : null;
+
   return (
     <div className={compact ? "chat chat-compact" : "chat"}>
       {/* role="log": los mensajes nuevos se anuncian a lectores de pantalla. */}
@@ -85,8 +106,8 @@ export function ChatCore({ compact = false }: { compact?: boolean }) {
         {messages.length === 0 && (
           <div className="chat-welcome">
             <p className="chat-hello">
-              Hola, soy tu estilista boho. Cuéntame qué buscas o para qué
-              ocasión, y rebusco entre las piezas de la tienda.
+              Hola, soy tu estilista boho. Dime qué buscas, para qué ocasión o tu
+              presupuesto, y te monto el look con piezas de la tienda.
             </p>
             <div className="chat-suggestions">
               {SUGERENCIAS.map((s) => (
@@ -105,8 +126,13 @@ export function ChatCore({ compact = false }: { compact?: boolean }) {
               <ul className="chat-products">
                 {m.products.map((p) => (
                   <li key={p.id} className="chat-product-row">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.imageUrl} alt={p.title} loading="lazy" />
+                    <Link href={`/producto/${p.id}`} className="chat-product-media">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={p.imageUrl} alt={p.title} loading="lazy" />
+                      {p.discountPct && p.discountPct >= 5 && (
+                        <span className="chat-disc">−{p.discountPct}%</span>
+                      )}
+                    </Link>
                     <div>
                       <p className="chat-product-title">{p.title}</p>
                       <p className="chat-product-price">
@@ -117,6 +143,19 @@ export function ChatCore({ compact = false }: { compact?: boolean }) {
                           </span>
                         )}
                       </p>
+                      {((p.rating && Number(p.rating) > 0) ||
+                        (p.ordersCount && p.ordersCount > 0)) && (
+                        <p className="chat-product-social">
+                          {p.rating && Number(p.rating) > 0 && (
+                            <span className="chat-rating">
+                              ★ {Math.round(Number(p.rating))}%
+                            </span>
+                          )}
+                          {p.ordersCount && p.ordersCount > 0 && (
+                            <span>{formatOrders(p.ordersCount)} vendidos</span>
+                          )}
+                        </p>
+                      )}
                     </div>
                     <Link href={`/producto/${p.id}`} className="chat-product-link">
                       Ver →
@@ -137,6 +176,17 @@ export function ChatCore({ compact = false }: { compact?: boolean }) {
           </p>
         )}
         {error && <p className="error-msg">{error}</p>}
+
+        {/* Sugerencias de seguimiento bajo la última respuesta */}
+        {lastAssistant?.suggestions && lastAssistant.suggestions.length > 0 && (
+          <div className="chat-followups">
+            {lastAssistant.suggestions.map((s) => (
+              <button key={s} className="secondary" onClick={() => send(s)}>
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
 

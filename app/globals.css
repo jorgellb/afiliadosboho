@@ -1177,12 +1177,61 @@ button.secondary:hover:not(:disabled) {
   padding: 0.45rem 0.6rem;
 }
 
+.chat-product-media {
+  position: relative;
+  flex-shrink: 0;
+  display: block;
+  line-height: 0;
+}
+
 .chat-product-row img {
   width: 52px;
   height: 66px;
   object-fit: cover;
   border: 1px solid var(--line);
   flex-shrink: 0;
+}
+
+.chat-disc {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  background: var(--terracotta);
+  color: var(--paper);
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 0.05rem 0.25rem;
+  line-height: 1.2;
+}
+
+.chat-product-social {
+  margin: 0.15rem 0 0;
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.chat-rating {
+  color: var(--terracotta-dark);
+  font-weight: 600;
+}
+
+.chat-followups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.2rem 0;
+}
+
+.chat-followups button {
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  border-color: var(--line);
 }
 
 .chat-product-row > div {
