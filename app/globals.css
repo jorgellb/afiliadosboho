@@ -1655,6 +1655,167 @@ button.secondary:hover:not(:disabled) {
   margin: 0 0 0.4rem;
 }
 
+/* ---------- Encuentra este Look ---------- */
+
+.find-look-page {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.find-look-head {
+  text-align: center;
+  padding: clamp(1.6rem, 5vw, 3rem) 0 1.4rem;
+}
+
+.find-look-head h1 {
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  margin: 0.4rem 0 0.6rem;
+}
+
+.find-look-head h1 em {
+  font-style: italic;
+  color: var(--terracotta-dark);
+}
+
+.dropzone {
+  border: 2px dashed var(--line);
+  background: #fffdf8;
+  border-radius: 4px;
+  padding: clamp(2rem, 6vw, 4rem);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.dropzone:hover,
+.dropzone.over {
+  border-color: var(--terracotta);
+  background: var(--paper-deep);
+}
+
+.dz-title {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  margin: 0 0 0.3rem;
+}
+
+.dropzone kbd {
+  font-family: var(--font-sans);
+  font-size: 0.75em;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0.05rem 0.35rem;
+  background: var(--paper);
+}
+
+.dz-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.dz-preview {
+  max-height: 240px;
+  max-width: 100%;
+  border: 1px solid var(--line);
+}
+
+.dz-spinner {
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--line);
+  border-top-color: var(--terracotta);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.find-look-privacy {
+  text-align: center;
+  margin: 1rem 0;
+  font-size: 0.82rem;
+}
+
+.find-look-error {
+  text-align: center;
+  padding: 1.2rem 0;
+}
+
+.fl-source {
+  display: grid;
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+  gap: 1.6rem;
+  align-items: start;
+  padding: 1.4rem 0;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 1.6rem;
+}
+
+.fl-source img {
+  width: 100%;
+  border: 1px solid var(--line);
+}
+
+.fl-items-list {
+  margin: 0.6rem 0;
+  padding-left: 1.2rem;
+}
+
+.fl-total {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  margin: 0.8rem 0;
+}
+
+.fl-item-block {
+  margin-bottom: 2rem;
+}
+
+.fl-item-block h2 {
+  font-size: 1.3rem;
+  margin: 0 0 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.fl-item-num {
+  display: inline-grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+}
+
+.fl-similarity {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 0.15rem 0.5rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--terracotta-dark);
+  font-weight: 600;
+}
+
+@media (max-width: 620px) {
+  .fl-source {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ---------- Probador Boho (AR) ---------- */
 
 .tryon-cta {

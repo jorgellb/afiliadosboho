@@ -74,6 +74,46 @@ de modo que las recomendaciones siempre llevan enlace de afiliado con clic
 contado y la tienda crece con cada conversación. Si la API de NVIDIA está
 saturada responde 503 con mensaje claro (timeout de 55 s por llamada).
 
+## Encuentra este Look (búsqueda por imagen, coste cero)
+
+Sube una foto/captura de un outfit y encuentra las prendas más parecidas del
+catálogo por búsqueda semántica. Todo en tier gratuito.
+
+**Flujo**: la imagen se comprime en el navegador (máx 1280px, JPEG 0.8) → se
+envía a `/api/find-look` como base64 (**no se almacena en ningún sitio**) → el
+modelo de visión de NVIDIA descompone el outfit en prendas → cada prenda se
+convierte en embedding (`nvidia/nv-embedqa-e5-v5`, 1024 dim) → **pgvector**
+(HNSW, coseno) busca los productos más cercanos del mismo tipo → re-ranking por
+color/detalle, umbral 0.55, relajación a tipos hermanos → resultados con foto
+(URL original de AliExpress), precio, "% parecido" y enlace de afiliado.
+
+**Indexación del catálogo** (Módulo A): cada producto se cataloga con visión
+(descripción canónica en inglés + atributos) y se embebe. Por límite del free
+tier de NIM (~40 req/min) y de los crons de Hobby, se hace en **lotes pequeños
+reanudables** (`/api/catalog/embed-batch`, protegido con `INTERNAL_API_KEY`):
+- Arranque masivo desde tu ordenador: `npx tsx scripts/embed-all.ts` (llama al
+  endpoint en bucle con pausas de 60s; reanudable si lo cortas).
+- El cron diario indexa un lote de productos nuevos y limpia búsquedas >48h.
+
+### Límites de cada tier gratuito usado
+- **Neon free**: ~0.5 GB. Solo texto/vectores/URLs (nunca imágenes). Un vector
+  de 1024 dim ≈ 4 KB → ~50.000 productos ≈ 200 MB. La BD se autosuspende: la
+  primera búsqueda del día puede tardar 1-3s extra (cold start), no es un error.
+- **NVIDIA NIM free**: ~40 req/min. Cola global de concurrencia 2; ante 429 se
+  espera y reintenta. Tope diario de búsquedas configurable (`MAX_DAILY_SEARCHES`).
+- **Vercel Hobby**: funciones ≤60s (lotes de 10 productos para no superarlo);
+  crons diarios (uno solo hace indexación + limpieza).
+
+### Re-indexado
+Cambiar `EMBEDDING_MODEL` en `lib/nvidia.ts` obliga a re-indexar: el batch
+detecta que las filas tienen otro `embedding_model` y las regenera solo.
+
+### Si el proyecto crece
+Primer cuello de botella: la **indexación** (visión + embedding por producto a
+40 req/min ⇒ ~1.200 productos/hora de tu máquina con el script). El primer euro
+mejor gastado sería un tier de NIM con más rate limit (o un modelo de embeddings
+autoalojado), no almacenamiento: la BD aguanta decenas de miles de productos.
+
 ## Probador Boho Virtual
 
 Prueba de accesorios en tiempo real, sin coste y sin registro. Flujo:

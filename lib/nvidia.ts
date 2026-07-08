@@ -49,8 +49,8 @@ export interface CallResult {
   visionUsed: boolean;
 }
 
-// --- Límite de concurrencia (~40 req/min con 3 en paralelo) ---
-const MAX_CONCURRENCY = 3;
+// --- Límite de concurrencia global (~40 req/min del free tier de NIM) ---
+const MAX_CONCURRENCY = 2;
 let active = 0;
 const queue: Array<() => void> = [];
 
@@ -161,6 +161,69 @@ export async function callNvidia(
     throw lastError instanceof Error
       ? lastError
       : new Error("todos los modelos de NVIDIA fallaron");
+  });
+}
+
+// Modelo de embeddings del free tier de NIM (verificado: dim 1024).
+export const EMBEDDING_MODEL = "nvidia/nv-embedqa-e5-v5";
+export const EMBEDDING_DIM = 1024;
+
+/**
+ * Embedding de texto con nv-embedqa-e5-v5 (1024 dim). `inputType` debe ser
+ * "passage" al indexar el catálogo y "query" al buscar. Pasa por la misma cola
+ * global y reintenta ante 429/5xx.
+ */
+export async function embedText(
+  text: string,
+  inputType: "query" | "passage"
+): Promise<number[]> {
+  return withLimit(async () => {
+    const apiKey = process.env.NVIDIA_API_KEY;
+    if (!apiKey) throw new Error("Falta la variable de entorno NVIDIA_API_KEY");
+    const backoff = [0, 1000, 3000];
+    let lastError: unknown;
+    for (let attempt = 0; attempt < backoff.length; attempt++) {
+      if (backoff[attempt]) await sleep(backoff[attempt]);
+      try {
+        const response = await fetch(`${BASE_URL}/embeddings`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: EMBEDDING_MODEL,
+            input: [text.slice(0, 2000)],
+            input_type: inputType,
+            encoding_format: "float",
+            truncate: "END",
+          }),
+          cache: "no-store",
+          signal: AbortSignal.timeout(30_000),
+        });
+        if (!response.ok) {
+          const detail = await response.text().catch(() => "");
+          const err = new Error(`HTTP ${response.status} ${detail.slice(0, 120)}`);
+          // @ts-expect-error etiqueta para reintento
+          err.status = response.status;
+          throw err;
+        }
+        const data = (await response.json()) as {
+          data?: Array<{ embedding?: number[] }>;
+        };
+        const embedding = data.data?.[0]?.embedding;
+        if (!embedding || embedding.length !== EMBEDDING_DIM) {
+          throw new Error("embedding con dimensión inesperada");
+        }
+        return embedding;
+      } catch (error) {
+        lastError = error;
+        const status = (error as { status?: number }).status;
+        const isTimeout = error instanceof Error && error.name === "TimeoutError";
+        if (!(isTimeout || status === 429 || (status && status >= 500))) throw error;
+      }
+    }
+    throw lastError instanceof Error ? lastError : new Error("embeddings falló");
   });
 }
 
