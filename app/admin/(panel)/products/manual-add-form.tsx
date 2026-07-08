@@ -38,7 +38,7 @@ export function ManualAddForm() {
         description: (fd.get("description") as string) || null,
         imageUrl: fd.get("imageUrl"),
         price: fd.get("price"),
-        currency: ((fd.get("currency") as string) || "USD").toUpperCase(),
+        currency: ((fd.get("currency") as string) || "EUR").toUpperCase(),
         originalPrice: (fd.get("originalPrice") as string) || null,
         affiliateUrl: fd.get("affiliateUrl"),
         productUrl: (fd.get("productUrl") as string) || null,
@@ -85,8 +85,8 @@ export function ManualAddForm() {
         <input name="price" type="number" step="0.01" min="0.01" required />
       </label>
       <label>
-        Moneda (ISO, ej. USD, EUR)
-        <input name="currency" defaultValue="USD" maxLength={3} minLength={3} />
+        Moneda (ISO, ej. EUR, USD)
+        <input name="currency" defaultValue="EUR" maxLength={3} minLength={3} />
       </label>
       <label>
         Precio original (opcional, para mostrar descuento)

@@ -40,7 +40,7 @@ export const products = pgTable(
     description: text("description"),
     imageUrl: text("image_url").notNull(),
     price: numeric("price", { precision: 10, scale: 2 }).notNull(),
-    currency: text("currency").notNull().default("USD"),
+    currency: text("currency").notNull().default("EUR"),
     originalPrice: numeric("original_price", { precision: 10, scale: 2 }),
     affiliateUrl: text("affiliate_url").notNull(),
     productUrl: text("product_url"),

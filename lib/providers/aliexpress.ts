@@ -35,7 +35,7 @@ function config() {
     appKey: requireEnv("ALIEXPRESS_APP_KEY"),
     appSecret: requireEnv("ALIEXPRESS_APP_SECRET"),
     trackingId: requireEnv("ALIEXPRESS_TRACKING_ID"),
-    currency: process.env.ALIEXPRESS_TARGET_CURRENCY || "USD",
+    currency: process.env.ALIEXPRESS_TARGET_CURRENCY || "EUR",
     language: process.env.ALIEXPRESS_TARGET_LANGUAGE || "ES",
     shipTo: process.env.ALIEXPRESS_SHIP_TO || "",
   };

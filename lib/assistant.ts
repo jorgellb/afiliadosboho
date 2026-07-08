@@ -353,7 +353,7 @@ async function buildOutfit(args: {
     }
   }
   const total = pieces.reduce((sum, p) => sum + Number(p.price), 0);
-  return { pieces, total, currency: pieces[0]?.currency ?? "USD" };
+  return { pieces, total, currency: pieces[0]?.currency ?? "EUR" };
 }
 
 export async function callModel(
@@ -500,7 +500,7 @@ export async function runAssistant(
       let results: AssistantProduct[] = [];
       let toolError: string | null = null;
       let outfitTotal: number | null = null;
-      let outfitCurrency = "USD";
+      let outfitCurrency = "EUR";
       let args: Record<string, unknown> = {};
       try {
         args = JSON.parse(call.function.arguments || "{}");

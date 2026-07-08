@@ -141,6 +141,8 @@ export function FindMyLook() {
   const lookTotal =
     result?.items.reduce((sum, it) => sum + (Number(it.matches[0]?.price) || 0), 0) ??
     0;
+  const lookCurrency =
+    result?.items.find((it) => it.matches[0])?.matches[0]?.currency ?? "EUR";
 
   return (
     <div className="find-look">
@@ -223,7 +225,7 @@ export function FindMyLook() {
               {lookTotal > 0 && (
                 <p className="fl-total">
                   Recrea este look completo por{" "}
-                  <strong>{formatPrice(lookTotal.toFixed(2), "USD")}</strong>
+                  <strong>{formatPrice(lookTotal.toFixed(2), lookCurrency)}</strong>
                 </p>
               )}
               <button className="secondary" onClick={() => setResult(null)}>

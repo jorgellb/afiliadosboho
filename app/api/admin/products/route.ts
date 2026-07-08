@@ -17,7 +17,7 @@ const bodySchema = z.object({
   description: z.string().trim().max(2000).nullish(),
   imageUrl: z.url(),
   price: priceSchema,
-  currency: z.string().trim().length(3).default("USD"),
+  currency: z.string().trim().length(3).default("EUR"),
   originalPrice: priceSchema.nullish(),
   affiliateUrl: z.url(),
   productUrl: z.url().nullish(),
