@@ -225,7 +225,10 @@ const SIBLINGS: Record<string, string[]> = {
   dress: ["skirt"],
 };
 
-const SIMILARITY_THRESHOLD = 0.55;
+// Calibrado con datos reales de nv-embedqa-e5-v5 (2026-07-08): los matches boho
+// legítimos caen en 0.50-0.65 y lo irrelevante en 0.34-0.47, así que el 0.55 del
+// spec (pensado para otro modelo) tiraba coincidencias válidas. Configurable.
+const SIMILARITY_THRESHOLD = Number(process.env.MATCH_THRESHOLD || 0.48);
 
 export interface Match {
   productId: string;
