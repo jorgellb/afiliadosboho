@@ -1,8 +1,13 @@
-import { eq, isNull, sql } from "drizzle-orm";
+import { desc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { Product, products } from "@/lib/db/schema";
 import { callModel } from "@/lib/assistant";
 import { bumpCacheVersion } from "@/lib/cache";
+
+// Límites recomendados por los buscadores (para avisos y validación).
+export const META_TITLE_MAX = 60;
+export const META_DESC_MIN = 120;
+export const META_DESC_MAX = 160;
 
 /**
  * Redactor SEO: el agente escribe la ficha de cada producto — título
@@ -32,27 +37,46 @@ interface SeoCopy {
   meta_title: string;
   meta_description: string;
   descripcion: string;
+  tags: string[];
 }
 
-async function writeSeoCopy(product: Product): Promise<SeoCopy> {
+export interface SeoGenOptions {
+  /** Palabra/frase clave objetivo para orientar la redacción. */
+  keyword?: string;
+}
+
+async function writeSeoCopy(
+  product: Product,
+  opts: SeoGenOptions = {}
+): Promise<SeoCopy> {
+  const keywordLine = opts.keyword
+    ? `\n- Palabra clave OBJETIVO (debe aparecer literal en el título SEO y en la meta description): ${opts.keyword}`
+    : "";
   const message = await callModel(
     [
       {
         role: "user",
-        content: `Eres redactor SEO senior de "Boho Chic", una tienda online de moda bohemia en español.
-Escribe la ficha SEO del siguiente producto. Responde SOLO con este JSON, sin texto extra:
+        content: `Eres redactor SEO senior de "Boho Chic", una tienda online de moda bohemia en español. Escribes para posicionar en Google y para convertir.
+
+Reglas de calidad:
+- Nada de relleno ni superlativos vacíos. Lenguaje natural, específico y comercial.
+- NO inventes tallas, materiales, composición ni datos que no estén en el título original.
+- No menciones tiendas, proveedores ni marcas de terceros.
+- Respeta ESTRICTAMENTE los límites de caracteres (Google los recorta).
+
+Responde SOLO con este JSON, sin texto extra:
 {
-  "titulo": "título comercial claro y natural, 40-60 caracteres, la palabra clave principal al inicio, sin nombre del vendedor ni MAYÚSCULAS gritonas",
-  "meta_title": "máximo 60 caracteres incluyendo el sufijo obligatorio ' | Boho Chic'",
-  "meta_description": "entre 140 y 155 caracteres: beneficio concreto + gancho + llamada a la acción; sin comillas dobles",
-  "descripcion": "60-90 palabras en 2 párrafos cortos, tono editorial cercano; describe estilo, ocasiones de uso y cómo combinarla; NO inventes tallas, materiales ni datos que no estén en el título original"
+  "titulo": "título comercial claro y natural, 45-65 caracteres, la palabra clave principal al inicio, sin MAYÚSCULAS gritonas",
+  "meta_title": "máximo ${META_TITLE_MAX} caracteres EN TOTAL incluyendo el sufijo obligatorio ' | Boho Chic'",
+  "meta_description": "entre ${META_DESC_MIN} y ${META_DESC_MAX} caracteres: beneficio concreto + gancho + llamada a la acción; sin comillas dobles",
+  "descripcion": "60-90 palabras en 2 párrafos cortos, tono editorial cercano; describe estilo, ocasiones de uso y cómo combinarla",
+  "tags": ["4-8 palabras clave en español, minúsculas, sin #, relevantes para búsqueda interna y para SEO (tipo de prenda, estilo, ocasión, color, detalle)"]
 }
 
 Producto:
 - Título original: ${product.title}
 - Categoría: ${product.category}
-- Precio: ${product.price} ${product.currency}
-- Tienda: ${product.source}`,
+- Precio: ${product.price} ${product.currency}${keywordLine}`,
       },
     ],
     { maxTokens: 4096 }
@@ -67,11 +91,18 @@ Producto:
   ) {
     throw new Error("ficha incompleta");
   }
+  const tags = Array.isArray(parsed.tags)
+    ? parsed.tags
+        .map((t) => String(t).trim().toLowerCase().replace(/^#/, ""))
+        .filter((t) => t.length >= 2 && t.length <= 40)
+        .slice(0, 8)
+    : [];
   return {
     titulo: parsed.titulo.trim().slice(0, 80),
     meta_title: parsed.meta_title.trim().slice(0, 70),
     meta_description: parsed.meta_description.trim().slice(0, 170),
     descripcion: parsed.descripcion.trim().slice(0, 1200),
+    tags,
   };
 }
 
@@ -88,9 +119,14 @@ async function uniqueSlug(base: string, productId: string): Promise<string> {
 }
 
 /** Genera la ficha SEO de un producto concreto y la guarda. */
-export async function generateSeoForProduct(product: Product): Promise<void> {
-  const copy = await writeSeoCopy(product);
+export async function generateSeoForProduct(
+  product: Product,
+  opts: SeoGenOptions = {}
+): Promise<void> {
+  const copy = await writeSeoCopy(product, opts);
   const slug = await uniqueSlug(copy.titulo, product.id);
+  // Mezcla los tags nuevos con los existentes (sin duplicar), no los pierde.
+  const mergedTags = [...new Set([...product.tags, ...copy.tags])].slice(0, 12);
   await db
     .update(products)
     .set({
@@ -99,9 +135,123 @@ export async function generateSeoForProduct(product: Product): Promise<void> {
       seoDescription: copy.descripcion,
       metaTitle: copy.meta_title,
       metaDescription: copy.meta_description,
+      tags: mergedTags,
       updatedAt: sql`now()`,
     })
     .where(eq(products.id, product.id));
+}
+
+/** Genera solo tags/keywords para un producto (más rápido y barato). */
+export async function generateTagsForProduct(product: Product): Promise<string[]> {
+  const message = await callModel(
+    [
+      {
+        role: "user",
+        content: `Genera entre 5 y 8 palabras clave de búsqueda en español para este producto de moda boho, en minúsculas y sin #. Tipo de prenda, estilo, ocasión, color y detalle. Responde SOLO con un array JSON de strings.
+Producto: ${product.title} (categoría: ${product.category})`,
+      },
+    ],
+    { maxTokens: 300 }
+  );
+  const raw = (message.content ?? "").replace(/```json|```/g, "").trim();
+  const arr = JSON.parse(raw.slice(raw.indexOf("["))) as unknown[];
+  const tags = arr
+    .map((t) => String(t).trim().toLowerCase().replace(/^#/, ""))
+    .filter((t) => t.length >= 2 && t.length <= 40);
+  const merged = [...new Set([...product.tags, ...tags])].slice(0, 12);
+  await db
+    .update(products)
+    .set({ tags: merged, updatedAt: sql`now()` })
+    .where(eq(products.id, product.id));
+  await bumpCacheVersion();
+  return merged;
+}
+
+export interface SeoIssue {
+  id: string;
+  title: string;
+  slug: string | null;
+  detail: string;
+}
+
+export interface SeoHealth {
+  total: number;
+  withSeo: number;
+  coverage: number; // 0-100
+  counts: {
+    missing: number;
+    titleTooLong: number;
+    descBadLength: number;
+    noTags: number;
+    duplicateMeta: number;
+  };
+  issues: {
+    missing: SeoIssue[];
+    titleTooLong: SeoIssue[];
+    descBadLength: SeoIssue[];
+    noTags: SeoIssue[];
+    duplicateMeta: SeoIssue[];
+  };
+}
+
+/** Auditoría SEO del catálogo: cobertura y problemas accionables. */
+export async function getSeoHealth(): Promise<SeoHealth> {
+  const rows = await db
+    .select({
+      id: products.id,
+      title: products.title,
+      seoTitle: products.seoTitle,
+      metaTitle: products.metaTitle,
+      metaDescription: products.metaDescription,
+      slug: products.slug,
+      tags: products.tags,
+    })
+    .from(products)
+    .orderBy(desc(products.createdAt));
+
+  const health: SeoHealth = {
+    total: rows.length,
+    withSeo: 0,
+    coverage: 0,
+    counts: { missing: 0, titleTooLong: 0, descBadLength: 0, noTags: 0, duplicateMeta: 0 },
+    issues: { missing: [], titleTooLong: [], descBadLength: [], noTags: [], duplicateMeta: [] },
+  };
+
+  const metaSeen = new Map<string, number>();
+  for (const r of rows) {
+    if (r.metaTitle) metaSeen.set(r.metaTitle, (metaSeen.get(r.metaTitle) ?? 0) + 1);
+  }
+
+  const push = (key: keyof SeoHealth["issues"], r: (typeof rows)[number], detail: string) => {
+    health.counts[key]++;
+    if (health.issues[key].length < 50) {
+      health.issues[key].push({ id: r.id, title: r.seoTitle ?? r.title, slug: r.slug, detail });
+    }
+  };
+
+  for (const r of rows) {
+    if (!r.seoTitle) {
+      push("missing", r, "sin ficha SEO");
+      continue;
+    }
+    health.withSeo++;
+    if (r.metaTitle && r.metaTitle.length > META_TITLE_MAX) {
+      push("titleTooLong", r, `meta title ${r.metaTitle.length} car. (máx ${META_TITLE_MAX})`);
+    }
+    const dl = r.metaDescription?.length ?? 0;
+    if (dl < META_DESC_MIN || dl > META_DESC_MAX) {
+      push("descBadLength", r, `meta description ${dl} car. (ideal ${META_DESC_MIN}-${META_DESC_MAX})`);
+    }
+    if (!r.tags || r.tags.length === 0) {
+      push("noTags", r, "sin tags/keywords");
+    }
+    if (r.metaTitle && (metaSeen.get(r.metaTitle) ?? 0) > 1) {
+      push("duplicateMeta", r, "meta title duplicado");
+    }
+  }
+
+  health.coverage = health.total > 0 ? Math.round((health.withSeo / health.total) * 100) : 0;
+  return health;
 }
 
 /** Genera fichas para los productos que aún no tienen (lotes pequeños). */

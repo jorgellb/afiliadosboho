@@ -49,9 +49,25 @@ export function EditForm({ product }: { product: EditableProduct }) {
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
 
+  // Campos SEO controlados para vista previa y contadores en vivo.
+  const [seoTitle, setSeoTitle] = useState(product.seoTitle ?? "");
+  const [slug, setSlug] = useState(product.slug ?? "");
+  const [metaTitle, setMetaTitle] = useState(product.metaTitle ?? "");
+  const [metaDescription, setMetaDescription] = useState(product.metaDescription ?? "");
+  const [seoDescription, setSeoDescription] = useState(product.seoDescription ?? "");
+  const [tags, setTags] = useState(product.tags.join(", "));
+  const [keyword, setKeyword] = useState("");
+
   function feedback(ok: boolean, text: string) {
     setIsError(!ok);
     setMessage(text);
+  }
+
+  function countClass(len: number, min: number, max: number) {
+    if (len === 0) return "seo-count";
+    if (len > max) return "seo-count over";
+    if (len < min) return "seo-count under";
+    return "seo-count ok";
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -100,14 +116,42 @@ export function EditForm({ product }: { product: EditableProduct }) {
     setMessage(null);
     const res = await fetch(`/api/admin/products/${product.id}/seo`, {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "full", keyword: keyword || undefined }),
     });
     const data = await res.json().catch(() => ({}));
     setLoading(null);
-    if (res.ok) {
-      feedback(true, "Ficha regenerada por el agente ✓ (recargando)");
+    if (res.ok && data.product) {
+      const p = data.product;
+      setSeoTitle(p.seoTitle ?? "");
+      setSlug(p.slug ?? "");
+      setMetaTitle(p.metaTitle ?? "");
+      setMetaDescription(p.metaDescription ?? "");
+      setSeoDescription(p.seoDescription ?? "");
+      if (Array.isArray(p.tags)) setTags(p.tags.join(", "));
+      feedback(true, "Ficha regenerada por el agente ✓");
       router.refresh();
     } else {
       feedback(false, data.error ?? "Error regenerando la ficha");
+    }
+  }
+
+  async function generateTags() {
+    setLoading("tags");
+    setMessage(null);
+    const res = await fetch(`/api/admin/products/${product.id}/seo`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "tags" }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setLoading(null);
+    if (res.ok && Array.isArray(data.tags)) {
+      setTags(data.tags.join(", "));
+      feedback(true, "Tags generados por el agente ✓");
+      router.refresh();
+    } else {
+      feedback(false, data.error ?? "Error generando tags");
     }
   }
 
@@ -197,8 +241,23 @@ export function EditForm({ product }: { product: EditableProduct }) {
             </select>
           </label>
           <label>
-            Tags (separados por comas)
-            <input name="tags" defaultValue={product.tags.join(", ")} placeholder="boho, verano" />
+            Tags / keywords (separados por comas)
+            <span className="tags-field">
+              <input
+                name="tags"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                placeholder="boho, verano"
+              />
+              <button
+                type="button"
+                className="secondary"
+                disabled={loading !== null}
+                onClick={generateTags}
+              >
+                {loading === "tags" ? "…" : "IA"}
+              </button>
+            </span>
           </label>
         </div>
         <div className="edit-row edit-checks">
@@ -214,39 +273,88 @@ export function EditForm({ product }: { product: EditableProduct }) {
 
       <div className="admin-card">
         <h2>Ficha SEO</h2>
-        <p className="muted">
-          Puedes editarla a mano o pedir al agente que la redacte de nuevo.
-        </p>
-        <label>
-          Título SEO (portada y H1 de la ficha)
-          <input name="seoTitle" defaultValue={product.seoTitle ?? ""} maxLength={120} />
-        </label>
-        <label>
-          Slug (URL: /producto/…)
-          <input name="slug" defaultValue={product.slug ?? ""} pattern="[a-z0-9-]{3,80}" title="minúsculas, números y guiones" />
-        </label>
-        <label>
-          Meta title (≤60 caracteres)
-          <input name="metaTitle" defaultValue={product.metaTitle ?? ""} maxLength={70} />
-        </label>
-        <label>
-          Meta description (140–155 caracteres)
-          <textarea name="metaDescription" rows={2} maxLength={170} defaultValue={product.metaDescription ?? ""} />
-        </label>
-        <label>
-          Descripción de la ficha
-          <textarea name="seoDescription" rows={6} maxLength={2000} defaultValue={product.seoDescription ?? ""} />
-        </label>
-        <p>
+
+        {/* Vista previa de cómo se verá en los resultados de Google */}
+        <div className="serp-preview">
+          <p className="serp-crumbs">Boho Chic › producto › {slug || "…"}</p>
+          <p className="serp-title">
+            {(metaTitle || (seoTitle ? `${seoTitle} | Boho Chic` : "") || product.title).slice(0, 65)}
+          </p>
+          <p className="serp-desc">
+            {metaDescription || seoDescription || "Añade una meta description para controlar este texto en Google."}
+          </p>
+        </div>
+
+        <div className="seo-gen-bar">
+          <input
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            placeholder="Palabra clave objetivo (opcional)"
+            aria-label="Palabra clave objetivo"
+          />
           <button
             type="button"
-            className="secondary"
             disabled={loading !== null}
             onClick={regenerateSeo}
           >
-            {loading === "seo" ? "Redactando…" : "Regenerar ficha con IA"}
+            {loading === "seo" ? "Redactando…" : "Regenerar con IA"}
           </button>
-        </p>
+        </div>
+
+        <label>
+          Título SEO (portada y H1 de la ficha)
+          <input
+            name="seoTitle"
+            value={seoTitle}
+            onChange={(e) => setSeoTitle(e.target.value)}
+            maxLength={120}
+          />
+        </label>
+        <label>
+          Slug (URL: /producto/…)
+          <input
+            name="slug"
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            pattern="[a-z0-9-]{3,80}"
+            title="minúsculas, números y guiones"
+          />
+        </label>
+        <label>
+          Meta title{" "}
+          <span className={countClass(metaTitle.length, 1, 60)}>
+            {metaTitle.length}/60
+          </span>
+          <input
+            name="metaTitle"
+            value={metaTitle}
+            onChange={(e) => setMetaTitle(e.target.value)}
+            maxLength={90}
+          />
+        </label>
+        <label>
+          Meta description{" "}
+          <span className={countClass(metaDescription.length, 120, 160)}>
+            {metaDescription.length}/160
+          </span>
+          <textarea
+            name="metaDescription"
+            rows={2}
+            maxLength={200}
+            value={metaDescription}
+            onChange={(e) => setMetaDescription(e.target.value)}
+          />
+        </label>
+        <label>
+          Descripción de la ficha
+          <textarea
+            name="seoDescription"
+            rows={6}
+            maxLength={2000}
+            value={seoDescription}
+            onChange={(e) => setSeoDescription(e.target.value)}
+          />
+        </label>
       </div>
 
       <div className="admin-card edit-actions">

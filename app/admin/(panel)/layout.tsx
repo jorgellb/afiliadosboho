@@ -16,6 +16,7 @@ export default function AdminPanelLayout({
         <nav className="admin-menu">
           <Link href="/admin">Dashboard</Link>
           <Link href="/admin/products">Productos</Link>
+          <Link href="/admin/seo">Salud SEO</Link>
           <Link href="/admin/search">Buscar en AliExpress</Link>
         </nav>
         <div className="admin-aside-foot">
