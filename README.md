@@ -84,7 +84,7 @@ envía a `/api/find-look` como base64 (**no se almacena en ningún sitio**) → 
 modelo de visión de NVIDIA descompone el outfit en prendas → cada prenda se
 convierte en embedding (`nvidia/nv-embedqa-e5-v5`, 1024 dim) → **pgvector**
 (HNSW, coseno) busca los productos más cercanos del mismo tipo → re-ranking por
-color/detalle, umbral 0.55, relajación a tipos hermanos → resultados con foto
+color/detalle, umbral 0.48 (calibrado para nv-embedqa-e5-v5), relajación a tipos hermanos → resultados con foto
 (URL original de AliExpress), precio, "% parecido" y enlace de afiliado.
 
 **Indexación del catálogo** (Módulo A): cada producto se cataloga con visión
@@ -103,7 +103,7 @@ reanudables** (`/api/catalog/embed-batch`, protegido con `INTERNAL_API_KEY`):
   primera búsqueda del día puede tardar 1-3s extra (cold start), no es un error.
 - **NVIDIA NIM free**: ~40 req/min. Cola global de concurrencia 2; ante 429 se
   espera y reintenta. Tope diario de búsquedas configurable (`MAX_DAILY_SEARCHES`).
-- **Vercel Hobby**: funciones ≤60s (lotes de 10 productos para no superarlo);
+- **Vercel Hobby**: funciones ≤60s (lotes de 5 productos vía endpoint; el arranque masivo usa el indexador directo sin ese límite);
   crons diarios (uno solo hace indexación + limpieza).
 
 ### Re-indexado
