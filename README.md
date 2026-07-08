@@ -91,8 +91,10 @@ color/detalle, umbral 0.55, relajación a tipos hermanos → resultados con foto
 (descripción canónica en inglés + atributos) y se embebe. Por límite del free
 tier de NIM (~40 req/min) y de los crons de Hobby, se hace en **lotes pequeños
 reanudables** (`/api/catalog/embed-batch`, protegido con `INTERNAL_API_KEY`):
-- Arranque masivo desde tu ordenador: `npx tsx scripts/embed-all.ts` (llama al
-  endpoint en bucle con pausas de 60s; reanudable si lo cortas).
+- Arranque masivo desde tu ordenador (recomendado): `node scripts/index-direct.mjs`
+  indexa directo contra la BD y NIM (sin el timeout de las funciones serverless),
+  con ritmo para respetar el rate limit. Alternativa vía endpoint:
+  `npx tsx scripts/embed-all.ts` (lotes con pausas de 60s). Ambos reanudables.
 - El cron diario indexa un lote de productos nuevos y limpia búsquedas >48h.
 
 ### Límites de cada tier gratuito usado

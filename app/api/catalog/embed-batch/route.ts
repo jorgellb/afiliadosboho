@@ -15,9 +15,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
   try {
-    // Lote configurable; por defecto 10 para caber con holgura en el timeout de
-    // Hobby (~60s) incluso si algún producto cae al modelo de visión lento.
-    const size = Number(process.env.EMBED_BATCH_SIZE || 10);
+    // Lote configurable; por defecto 5 para caber con holgura en el timeout de
+    // Hobby (~60s) aun con ráfagas de 429 del free tier. Para el arranque masivo
+    // usa scripts/index-direct.mjs (indexa directo, sin límite serverless).
+    const size = Number(process.env.EMBED_BATCH_SIZE || 5);
     const summary = await embedBatch(size);
     return NextResponse.json(summary);
   } catch (error) {
