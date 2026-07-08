@@ -5,7 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 /**
  * Probador AR de accesorios (Módulo B). Todo ocurre en el navegador: ni la
  * cámara ni la foto salen del dispositivo. Usa MediaPipe FaceLandmarker para
- * anclar el PNG del accesorio (recortado con WASM) según su anchor_point.
+ * anclar el accesorio (con el fondo liso recortado en canvas) según su
+ * anchor_point.
  */
 
 interface Product {
@@ -38,15 +39,77 @@ const WASM_URL =
 const MODEL_URL =
   "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
 
-// Caché de PNG recortados por producto (evita reprocesar en la sesión).
-const overlayCache = new Map<string, HTMLImageElement>();
+// Caché de accesorios recortados por producto (evita reprocesar en la sesión).
+const overlayCache = new Map<string, HTMLCanvasElement>();
 
-type CamState = "idle" | "loading" | "active" | "denied" | "unsupported";
+type CamState = "idle" | "loading" | "active" | "denied" | "unsupported" | "error";
+
+/**
+ * Quita el fondo LISO (blanco/claro, típico de las fotos de producto) con un
+ * relleno por inundación desde los bordes: solo borra el fondo continuo con los
+ * bordes y dentro de una tolerancia de color, así conserva el accesorio aunque
+ * tenga zonas claras en su interior. Cero dependencias, instantáneo.
+ */
+function removeFlatBackground(img: HTMLImageElement): HTMLCanvasElement {
+  const w = img.naturalWidth || img.width;
+  const h = img.naturalHeight || img.height;
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
+  ctx.drawImage(img, 0, 0, w, h);
+  const image = ctx.getImageData(0, 0, w, h);
+  const d = image.data;
+
+  // Color de fondo de referencia: media de las cuatro esquinas.
+  const cornerIdx = [0, w - 1, (h - 1) * w, (h - 1) * w + (w - 1)];
+  let br = 0, bg = 0, bb = 0;
+  for (const c of cornerIdx) {
+    br += d[c * 4];
+    bg += d[c * 4 + 1];
+    bb += d[c * 4 + 2];
+  }
+  br /= 4;
+  bg /= 4;
+  bb /= 4;
+
+  // Si las esquinas no son claras ni uniformes, probablemente no es una foto de
+  // producto sobre fondo liso: no arriesgamos a recortar de más.
+  const TOL2 = 46 * 46;
+  const visited = new Uint8Array(w * h);
+  const stack: number[] = [];
+  for (let x = 0; x < w; x++) {
+    stack.push(x, (h - 1) * w + x);
+  }
+  for (let y = 0; y < h; y++) {
+    stack.push(y * w, y * w + (w - 1));
+  }
+  const near = (i: number) => {
+    const p = i * 4;
+    const dr = d[p] - br, dg = d[p + 1] - bg, db = d[p + 2] - bb;
+    return dr * dr + dg * dg + db * db <= TOL2;
+  };
+  while (stack.length) {
+    const idx = stack.pop()!;
+    if (visited[idx]) continue;
+    visited[idx] = 1;
+    if (!near(idx)) continue;
+    d[idx * 4 + 3] = 0; // píxel de fondo → transparente
+    const x = idx % w;
+    const y = (idx / w) | 0;
+    if (x > 0) stack.push(idx - 1);
+    if (x < w - 1) stack.push(idx + 1);
+    if (y > 0) stack.push(idx - w);
+    if (y < h - 1) stack.push(idx + w);
+  }
+  ctx.putImageData(image, 0, 0);
+  return canvas;
+}
 
 export function ARTryOn({ product }: { product: Product }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const overlayRef = useRef<HTMLImageElement | null>(null);
+  const overlayRef = useRef<HTMLCanvasElement | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const landmarkerRef = useRef<any>(null);
   const rafRef = useRef<number | null>(null);
@@ -91,24 +154,16 @@ export function ARTryOn({ product }: { product: Product }) {
     };
   }, [product.id, product.imageUrl, product.title]);
 
-  // Recorta el fondo del producto (WASM en cliente) → PNG transparente.
-  const loadOverlay = useCallback(async (): Promise<HTMLImageElement> => {
+  // Carga la imagen del producto (proxy same-origin) y le recorta el fondo liso.
+  const loadOverlay = useCallback(async (): Promise<HTMLCanvasElement> => {
     if (overlayCache.has(product.id)) return overlayCache.get(product.id)!;
-    let src = proxied;
-    try {
-      const { removeBackground } = await import("@imgly/background-removal");
-      const blob = await removeBackground(proxied);
-      src = URL.createObjectURL(blob);
-    } catch {
-      // Si el recorte falla, se usa la imagen original (con su fondo).
-      src = proxied;
-    }
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.src = src;
-    await img.decode().catch(() => {});
-    overlayCache.set(product.id, img);
-    return img;
+    img.src = proxied;
+    await img.decode();
+    const canvas = removeFlatBackground(img);
+    overlayCache.set(product.id, canvas);
+    return canvas;
   }, [product.id, proxied]);
 
   const lerp = (key: string, x: number, y: number) => {
@@ -122,7 +177,7 @@ export function ARTryOn({ product }: { product: Product }) {
 
   const drawImageCentered = (
     ctx: CanvasRenderingContext2D,
-    img: HTMLImageElement,
+    img: HTMLCanvasElement,
     cx: number,
     cy: number,
     targetW: number,
@@ -190,6 +245,26 @@ export function ARTryOn({ product }: { product: Product }) {
     [asset]
   );
 
+  // Crea el FaceLandmarker probando GPU y, si falla, CPU (algunos móviles/PC
+  // no soportan el delegate GPU y era una causa de "a veces no funciona").
+  async function createLandmarker(mode: "VIDEO" | "IMAGE") {
+    const { FaceLandmarker, FilesetResolver } = await import(
+      "@mediapipe/tasks-vision"
+    );
+    const vision = await FilesetResolver.forVisionTasks(WASM_URL);
+    for (const delegate of ["GPU", "CPU"] as const) {
+      try {
+        return await FaceLandmarker.createFromOptions(vision, {
+          baseOptions: { modelAssetPath: MODEL_URL, delegate },
+          runningMode: mode,
+          numFaces: 1,
+        });
+      } catch (e) {
+        if (delegate === "CPU") throw e;
+      }
+    }
+  }
+
   const stopCamera = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
@@ -208,18 +283,7 @@ export function ARTryOn({ product }: { product: Product }) {
     setCam("loading");
     setBusy("Preparando la pieza…");
     try {
-      overlayRef.current = await loadOverlay();
-      const { FaceLandmarker, FilesetResolver } = await import(
-        "@mediapipe/tasks-vision"
-      );
-      if (!landmarkerRef.current) {
-        const vision = await FilesetResolver.forVisionTasks(WASM_URL);
-        landmarkerRef.current = await FaceLandmarker.createFromOptions(vision, {
-          baseOptions: { modelAssetPath: MODEL_URL, delegate: "GPU" },
-          runningMode: "VIDEO",
-          numFaces: 1,
-        });
-      }
+      // La cámara primero (gesto del usuario): si se deniega, salimos limpio.
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: 640, height: 480 },
         audio: false,
@@ -228,6 +292,17 @@ export function ARTryOn({ product }: { product: Product }) {
       const video = videoRef.current!;
       video.srcObject = stream;
       await video.play();
+      if (!video.videoWidth) {
+        await new Promise<void>((r) =>
+          video.addEventListener("loadedmetadata", () => r(), { once: true })
+        );
+      }
+
+      setBusy("Ajustando la pieza…");
+      overlayRef.current = await loadOverlay();
+      if (!landmarkerRef.current) {
+        landmarkerRef.current = await createLandmarker("VIDEO");
+      }
 
       const canvas = canvasRef.current!;
       canvas.width = video.videoWidth || 640;
@@ -257,9 +332,12 @@ export function ARTryOn({ product }: { product: Product }) {
       loop();
     } catch (error) {
       setBusy(null);
+      stopCamera();
       const name = (error as Error).name;
       if (name === "NotAllowedError" || name === "SecurityError") setCam("denied");
-      else setCam("unsupported");
+      else if (name === "NotFoundError" || name === "NotReadableError")
+        setCam("unsupported");
+      else setCam("error"); // fallo al cargar el modelo/red, etc.
     }
   }
 
@@ -270,15 +348,8 @@ export function ARTryOn({ product }: { product: Product }) {
     setBusy("Analizando tu foto…");
     try {
       overlayRef.current = await loadOverlay();
-      const { FaceLandmarker, FilesetResolver } = await import(
-        "@mediapipe/tasks-vision"
-      );
-      const vision = await FilesetResolver.forVisionTasks(WASM_URL);
-      const imgLandmarker = await FaceLandmarker.createFromOptions(vision, {
-        baseOptions: { modelAssetPath: MODEL_URL, delegate: "GPU" },
-        runningMode: "IMAGE",
-        numFaces: 1,
-      });
+      const imgLandmarker = await createLandmarker("IMAGE");
+      if (!imgLandmarker) throw new Error("landmarker");
       const bitmap = await createImageBitmap(file);
       const canvas = canvasRef.current!;
       canvas.width = bitmap.width;
@@ -353,10 +424,21 @@ export function ARTryOn({ product }: { product: Product }) {
               </>
             ) : cam === "unsupported" ? (
               <>
-                <p>Tu navegador no permite la cámara aquí.</p>
+                <p>No encontramos una cámara disponible.</p>
                 <label className="btn-ghost ar-upload">
                   Probar con una foto
                   <input type="file" accept="image/*" onChange={onPhoto} hidden />
+                </label>
+              </>
+            ) : cam === "error" ? (
+              <>
+                <p>No se pudo iniciar el probador. Revisa tu conexión.</p>
+                <button className="btn-ghost" onClick={startCamera}>
+                  Reintentar
+                </button>
+                <label className="ar-upload-link">
+                  o <input type="file" accept="image/*" onChange={onPhoto} hidden />
+                  <span>sube una foto</span>
                 </label>
               </>
             ) : (
