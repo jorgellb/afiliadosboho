@@ -23,6 +23,9 @@
 
 html {
   scroll-behavior: smooth;
+  /* Blindaje global: nada provoca scroll horizontal. */
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -32,11 +35,20 @@ body {
   font-size: 1rem;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
   /* Grano de papel: puntos de tinta casi imperceptibles sobre el fondo. */
   background:
     radial-gradient(rgba(36, 28, 18, 0.03) 1px, transparent 1.2px),
     var(--paper);
   background-size: 23px 23px, auto;
+}
+
+/* Los medios nunca desbordan su contenedor. */
+img,
+video,
+svg,
+canvas {
+  max-width: 100%;
 }
 
 main {
@@ -56,6 +68,11 @@ h3 {
 
 a {
   color: inherit;
+}
+
+/* Los anclajes (#tienda…) no quedan tapados por el cabecero fijo. */
+[id] {
+  scroll-margin-top: 6rem;
 }
 
 :focus-visible {
@@ -107,13 +124,19 @@ a {
 
 .site-header {
   text-align: center;
-  padding: 1.5rem 1rem 1.1rem;
+  padding: clamp(1rem, 3vw, 1.5rem) 1rem clamp(0.8rem, 2vw, 1.1rem);
   border-bottom: 1px solid var(--ink);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: saturate(1.3) blur(10px);
+  -webkit-backdrop-filter: saturate(1.3) blur(10px);
 }
 
 .masthead-kicker {
   margin: 0 0 0.3rem;
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   letter-spacing: 0.34em;
   text-transform: uppercase;
   color: var(--ink-soft);
@@ -121,7 +144,7 @@ a {
 
 .logo {
   font-family: var(--font-display);
-  font-size: clamp(2.4rem, 6vw, 3.6rem);
+  font-size: clamp(1.9rem, 6vw, 3.4rem);
   font-weight: 700;
   letter-spacing: 0.01em;
   text-decoration: none;
@@ -130,13 +153,19 @@ a {
 }
 
 .masthead-nav {
-  margin-top: 0.65rem;
+  margin-top: 0.6rem;
   display: flex;
   justify-content: center;
-  gap: 1rem;
-  font-size: 0.76rem;
-  letter-spacing: 0.24em;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  font-size: clamp(0.66rem, 2.4vw, 0.76rem);
+  letter-spacing: 0.2em;
   text-transform: uppercase;
+}
+
+/* Los separadores "·" se ocultan en móvil, donde la nav envuelve. */
+.masthead-nav span[aria-hidden] {
+  color: var(--line);
 }
 
 .masthead-nav a {
@@ -617,7 +646,8 @@ button.secondary:hover:not(:disabled) {
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  /* min() evita que la columna mínima (240px) fuerce scroll en móviles < 240px. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
   gap: clamp(1.5rem, 3vw, 2.6rem) clamp(1rem, 2vw, 1.6rem);
   list-style: none;
   padding: clamp(1.6rem, 3vw, 2.4rem) 0 0;
@@ -636,6 +666,12 @@ button.secondary:hover:not(:disabled) {
   border: 1px solid var(--line);
   background: var(--paper-deep);
   display: block;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.product-card:hover .card-media {
+  box-shadow: var(--shadow);
+  transform: translateY(-3px);
 }
 
 .product-card img {
@@ -2595,6 +2631,166 @@ form.stacked {
   .chat-fab {
     bottom: 1.1rem;
     right: 1.1rem;
+  }
+}
+
+/* ======================================================
+   Responsive integral (tablet y móvil)
+   ====================================================== */
+
+/* --- Tablet y por debajo --- */
+@media (max-width: 820px) {
+  /* El cabecero editorial es alto: en móvil no se fija (gana pantalla). */
+  .site-header {
+    position: static;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--paper);
+  }
+  .masthead-kicker {
+    display: none;
+  }
+  /* La navegación pasa a una fila deslizable, limpia y sin separadores. */
+  .masthead-nav {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.15rem;
+  }
+  .masthead-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .masthead-nav a {
+    white-space: nowrap;
+  }
+  .masthead-nav span[aria-hidden] {
+    display: none;
+  }
+  /* Objetivos táctiles cómodos en los botones principales. */
+  .btn-primary,
+  .btn-ghost {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* --- Móvil --- */
+@media (max-width: 600px) {
+  .hero {
+    padding: 1.4rem 0 1.2rem;
+    gap: 1.3rem;
+  }
+  .hero h1 {
+    font-size: clamp(2.2rem, 11vw, 3.1rem);
+  }
+  .hero-actions {
+    gap: 0.6rem;
+  }
+  .hero-actions .btn-primary,
+  .hero-actions .btn-ghost {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+  .hero-stamp {
+    width: 4.6rem;
+    height: 4.6rem;
+    font-size: 0.78rem;
+    top: -0.6rem;
+  }
+
+  /* Barra de filtros: apilada y a lo ancho */
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.7rem;
+  }
+  .toolbar-form {
+    flex-wrap: wrap;
+  }
+  .toolbar-sort {
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding-bottom: 0.4rem;
+  }
+
+  /* Rejilla de productos: 2 columnas (no una tarjeta gigante por fila) */
+  .product-grid,
+  .look-grid,
+  .fl-matches .product-grid,
+  .tryon-suggestions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 0.7rem;
+  }
+  .product-card h3 {
+    font-size: 0.92rem;
+  }
+
+  /* Ficha de producto */
+  .ficha {
+    gap: 1.2rem;
+    padding-top: 1rem;
+  }
+  .ficha-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ficha-details {
+    gap: 1.1rem 1.6rem;
+  }
+
+  /* Estilista */
+  .chat-msg {
+    max-width: 94%;
+  }
+
+  /* Revista */
+  .article-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Admin */
+  .admin-content h1 {
+    font-size: 1.5rem;
+  }
+  .admin-filterbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .admin-filterbar input[type="search"],
+  .admin-filterbar select {
+    min-width: 0;
+    width: 100%;
+  }
+  .table-actions a,
+  .table-actions button {
+    margin-bottom: 0.3rem;
+  }
+  .edit-row {
+    flex-direction: column;
+    gap: 0;
+  }
+  .stat {
+    flex: 1 1 40%;
+    min-width: 0;
+  }
+
+  /* Pie: el wordmark gigante nunca desborda */
+  .footer-wordmark {
+    font-size: clamp(2.4rem, 17vw, 5rem);
+  }
+}
+
+/* --- Móvil estrecho: una columna --- */
+@media (max-width: 380px) {
+  .product-grid,
+  .look-grid,
+  .fl-matches .product-grid,
+  .tryon-suggestions {
+    grid-template-columns: 1fr;
   }
 }
 
