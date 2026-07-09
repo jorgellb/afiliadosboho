@@ -1740,6 +1740,59 @@ button.secondary:hover:not(:disabled) {
   margin: 0 0 0.4rem;
 }
 
+/* Enlaces internos dentro del texto del artículo */
+.article-prose a {
+  color: var(--terracotta-dark);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.article-prose a:hover {
+  color: var(--ink);
+}
+
+/* Sigue leyendo (cross-linking interno) */
+.article-related {
+  border-top: 1px solid var(--line);
+  margin-top: 2.4rem;
+  padding-top: 1.6rem;
+}
+
+.article-related h2 {
+  font-size: 1.5rem;
+  margin: 0 0 1rem;
+}
+
+.article-related-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.article-related-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.8rem;
+}
+
+.article-related-list a {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  text-decoration: none;
+}
+
+.article-related-list a:hover {
+  color: var(--terracotta-dark);
+}
+
+.article-related-list .muted {
+  font-size: 0.88rem;
+}
+
 /* ---------- Encuentra este Look ---------- */
 
 .find-look-page {

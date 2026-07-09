@@ -13,10 +13,13 @@ function escapeHtml(s: string): string {
 
 function inline(text: string): string {
   let out = escapeHtml(text);
-  // Enlaces [texto](https://…) — solo esquemas http/https.
+  // Enlaces [texto](url): http(s) externos o rutas internas ("/…").
   out = out.replace(
-    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-    (_m, label, url) => `<a href="${url}" rel="noopener">${label}</a>`
+    /\[([^\]]+)\]\(((?:https?:\/\/|\/)[^\s)]+)\)/g,
+    (_m, label, url: string) => {
+      const rel = url.startsWith("/") ? "" : ' rel="noopener"';
+      return `<a href="${url}"${rel}>${label}</a>`;
+    }
   );
   // Negrita **texto**
   out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");

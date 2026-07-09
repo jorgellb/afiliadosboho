@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getArticleBySlug, getArticleProducts } from "@/lib/content";
+import {
+  getArticleBySlug,
+  getArticleProducts,
+  getRelatedArticles,
+  linkifyCategories,
+} from "@/lib/content";
 import { renderMarkdown } from "@/lib/markdown";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
@@ -40,8 +45,12 @@ export default async function ArticlePage({ params }: Props) {
   const article = await getArticleBySlug(decodeURIComponent(slug));
   if (!article || !article.published) notFound();
 
-  const featured = await getArticleProducts(article.productIds);
-  const bodyHtml = renderMarkdown(article.body);
+  const [featured, related] = await Promise.all([
+    getArticleProducts(article.productIds),
+    getRelatedArticles(article.slug, article.category),
+  ]);
+  // Auto-enlazado interno de categorías dentro del cuerpo (SEO).
+  const bodyHtml = renderMarkdown(linkifyCategories(article.body));
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -71,7 +80,11 @@ export default async function ArticlePage({ params }: Props) {
       <article className="article">
         {article.heroImageUrl && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img className="article-hero" src={article.heroImageUrl} alt={article.title} />
+          <img
+            className="article-hero"
+            src={article.heroImageUrl}
+            alt={`${article.title} — moda boho de la tienda Boho Chic`}
+          />
         )}
         <p className="article-cat">{article.category}</p>
         <h1>{article.title}</h1>
@@ -92,7 +105,11 @@ export default async function ArticlePage({ params }: Props) {
                     aria-label={p.seoTitle ?? p.title}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.imageUrl} alt={p.seoTitle ?? p.title} loading="lazy" />
+                    <img
+                      src={p.imageUrl}
+                      alt={`${p.seoTitle ?? p.title} — ${p.category} boho`}
+                      loading="lazy"
+                    />
                     {p.discountPct && p.discountPct >= 5 && (
                       <span className="discount-badge">−{p.discountPct}%</span>
                     )}
@@ -109,6 +126,25 @@ export default async function ArticlePage({ params }: Props) {
                 </li>
               ))}
             </ul>
+          </section>
+        )}
+
+        {related.length > 0 && (
+          <section className="article-related">
+            <h2>Sigue leyendo en el Diario boho</h2>
+            <ul className="article-related-list">
+              {related.map((r) => (
+                <li key={r.id}>
+                  <Link href={`/revista/${r.slug}`}>{r.title}</Link>
+                  <span className="muted">{r.excerpt}</span>
+                </li>
+              ))}
+            </ul>
+            <p>
+              <Link className="buy-link" href="/revista">
+                Ver todas las guías
+              </Link>
+            </p>
           </section>
         )}
       </article>

@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import {
   Article,
@@ -25,6 +25,10 @@ interface Topic {
 }
 
 const TOPICS: Topic[] = [
+  // Temas nuevos (2026-07): van primero para que se generen antes.
+  { title: "Boho en la ciudad: 5 looks urbanos con alma bohemia", category: "vestidos", keyword: "boho urbano" },
+  { title: "Vestidos midi boho: el largo más favorecedor del verano", category: "vestidos", keyword: "vestido midi boho" },
+  { title: "El arte de las capas: collares y joyas boho superpuestas", category: "joyeria", keyword: "collares boho capas" },
   { title: "Cómo combinar un kimono boho en 5 looks", category: "kimonos", keyword: "kimono boho" },
   { title: "Vestidos boho para una boda en la playa", category: "vestidos", keyword: "vestido boho boda playa" },
   { title: "Guía de faldas boho: vuelo, largo y estampados", category: "faldas", keyword: "falda boho larga" },
@@ -36,6 +40,62 @@ const TOPICS: Topic[] = [
   { title: "Pantalones anchos boho: comodidad con estilo", category: "pantalones", keyword: "pantalon boho ancho" },
   { title: "Tendencias boho chic 2026", category: "vestidos", keyword: "tendencias boho 2026" },
 ];
+
+// Auto-enlazado interno: la primera mención de cada categoría en el cuerpo se
+// convierte en enlace a su página (SEO), sin depender de que la IA lo haga.
+const CATEGORY_PATTERNS: Array<[RegExp, Category]> = [
+  [/\bvestidos?\b/i, "vestidos"],
+  [/\bkimonos?\b/i, "kimonos"],
+  [/\bfaldas?\b/i, "faldas"],
+  [/\bblusas?\b/i, "blusas"],
+  [/\bpantalones?\b/i, "pantalones"],
+  [/\bbolsos?\b/i, "bolsos"],
+  [/\b(sandalias?|calzado|zapatos?|botas?)\b/i, "calzado"],
+  [/\b(joyer[íi]a|collar(?:es)?|pendientes?|pulseras?)\b/i, "joyeria"],
+  [/\b(accesorios?|sombreros?|cintur(?:ón|on)(?:es)?)\b/i, "accesorios"],
+];
+
+/**
+ * Convierte la primera mención de cada categoría (fuera de encabezados) en un
+ * enlace interno a su página. Máximo 4 enlaces para no sobre-enlazar.
+ */
+export function linkifyCategories(body: string): string {
+  const used = new Set<Category>();
+  let added = 0;
+  return body
+    .split("\n")
+    .map((line) => {
+      if (line.startsWith("#") || added >= 4) return line;
+      let out = line;
+      for (const [re, cat] of CATEGORY_PATTERNS) {
+        if (used.has(cat) || added >= 4) continue;
+        if (re.test(out)) {
+          out = out.replace(re, (m) => `[${m}](/?category=${cat})`);
+          used.add(cat);
+          added++;
+        }
+      }
+      return out;
+    })
+    .join("\n");
+}
+
+/** Otros artículos publicados para enlazar (prioriza la misma categoría). */
+export async function getRelatedArticles(
+  excludeSlug: string,
+  category: Category,
+  limit = 3
+): Promise<Article[]> {
+  const rows = await db
+    .select()
+    .from(articles)
+    .where(and(eq(articles.published, true), ne(articles.slug, excludeSlug)))
+    .orderBy(desc(articles.createdAt))
+    .limit(12);
+  const sameCat = rows.filter((r) => r.category === category);
+  const others = rows.filter((r) => r.category !== category);
+  return [...sameCat, ...others].slice(0, limit);
+}
 
 export interface ContentSummary {
   generated: number;
@@ -49,6 +109,31 @@ interface ArticleCopy {
   body: string;
 }
 
+/** Extrae y parsea el JSON del artículo; repara una vez si viene malformado. */
+async function parseArticleJson(content: string): Promise<Partial<ArticleCopy>> {
+  const extract = (s: string) => {
+    const clean = s.replace(/```json|```/g, "").trim();
+    const start = clean.indexOf("{");
+    const end = clean.lastIndexOf("}");
+    return start !== -1 && end !== -1 ? clean.slice(start, end + 1) : clean;
+  };
+  try {
+    return JSON.parse(extract(content)) as Partial<ArticleCopy>;
+  } catch {
+    // El modelo a veces deja comillas o saltos sin escapar: se le pide corregir.
+    const repair = await callModel(
+      [
+        {
+          role: "user",
+          content: `Corrige y devuelve SOLO este JSON válido, escapando bien las comillas y los saltos de línea internos, sin cambiar el contenido:\n${extract(content).slice(0, 6000)}`,
+        },
+      ],
+      { maxTokens: 4096 }
+    );
+    return JSON.parse(extract(repair.content ?? "")) as Partial<ArticleCopy>;
+  }
+}
+
 async function writeArticle(topic: Topic, featured: Product[]): Promise<ArticleCopy> {
   const piezas = featured
     .map((p) => `- ${p.seoTitle ?? p.title} (${p.price} ${p.currency})`)
@@ -57,29 +142,32 @@ async function writeArticle(topic: Topic, featured: Product[]): Promise<ArticleC
     [
       {
         role: "user",
-        content: `Eres redactora de moda de "Boho Chic". Escribe un artículo editorial en español, SEO, sobre "${topic.title}" (palabra clave: ${topic.keyword}).
+        content: `Eres Lucía, estilista y redactora del "Diario boho" de la tienda Boho Chic. Escribes como una amiga con criterio: cercana, con voz propia y opiniones, nada robótica.
 
-Requisitos del cuerpo (markdown ligero):
-- 350-500 palabras, tono cercano y experto, nada de relleno.
-- 2 o 3 secciones con encabezado "## ".
-- Consejos concretos de cómo combinar, tejidos, ocasiones y accesorios.
-- Puedes mencionar de forma natural piezas de esta lista, pero SIN inventar enlaces ni precios (los enlaces los añadimos nosotros):
+Escribe un artículo para el blog sobre "${topic.title}" (palabra clave a posicionar en Google: ${topic.keyword}).
+
+Voz y estilo (MUY humano, esto es lo importante):
+- Habla en primera persona (yo/nosotras) e incluye alguna preferencia o pequeña anécdota real ("mi truco cuando aprieta el calor…", "reconozco que soy team…").
+- Ritmo variado en las frases, transiciones naturales, algún detalle sensorial (el tacto del lino, la luz de la tarde, el sonido de los flecos).
+- Consejos concretos y accionables: cómo combinar, qué tejidos, para qué ocasión, colores y accesorios.
+- EVITA clichés de IA ("en el mundo de la moda", "sin duda", "en resumen", "en conclusión") y el relleno. Nada de listas de puntos genéricas y frías.
+- 450-650 palabras. Exactamente 3 secciones con encabezado "## ". Puedes usar como mucho una lista corta.
+- Menciona con naturalidad, por su nombre, algunas de estas piezas (sin inventar precios ni datos técnicos):
 ${piezas || "(sin piezas destacadas)"}
-- No menciones AliExpress, proveedores ni comisiones.
+- No menciones AliExpress, proveedores, envíos ni comisiones.
 
-Responde SOLO con este JSON, sin texto extra:
+Responde SOLO con este JSON válido, sin texto extra:
 {
   "meta_title": "≤60 caracteres, con la palabra clave, termina en ' | Boho Chic'",
-  "meta_description": "140-155 caracteres con gancho y llamada a la acción",
-  "excerpt": "1 frase de 15-25 palabras que resuma el artículo",
-  "body": "el artículo en markdown con encabezados ##"
+  "meta_description": "140-155 caracteres, con gancho y llamada a la acción; sin comillas dobles",
+  "excerpt": "1 frase con voz propia de 15-25 palabras que dé ganas de leer",
+  "body": "el artículo en markdown con 3 encabezados ##"
 }`,
       },
     ],
     { maxTokens: 4096 }
   );
-  const raw = (message.content ?? "").replace(/```json|```/g, "").trim();
-  const parsed = JSON.parse(raw) as Partial<ArticleCopy>;
+  const parsed = await parseArticleJson(message.content ?? "");
   if (!parsed.meta_title || !parsed.meta_description || !parsed.excerpt || !parsed.body) {
     throw new Error("artículo incompleto");
   }
