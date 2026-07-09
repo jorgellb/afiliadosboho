@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Playfair_Display, Manrope } from "next/font/google";
+import { Fraunces, Mulish } from "next/font/google";
 import { ChatWidget } from "./components/chat-widget";
 import "./globals.css";
 
-const playfair = Playfair_Display({
+// Fraunces: serif suave y cálida (boho amable) para títulos.
+const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-display",
   style: ["normal", "italic"],
+  weight: ["400", "500", "600"],
 });
 
-const manrope = Manrope({
+// Mulish: sans humanista, redondeada y limpia para el texto.
+const mulish = Mulish({
   subsets: ["latin"],
   variable: "--font-sans",
 });
@@ -27,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${playfair.variable} ${manrope.variable}`}>
+    <html lang="es" className={`${fraunces.variable} ${mulish.variable}`}>
       <body>
         <header className="site-header">
           <p className="masthead-kicker">Edición boho · desde 2026</p>
