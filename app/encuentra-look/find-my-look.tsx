@@ -38,10 +38,11 @@ function formatPrice(price: string, currency: string): string {
   );
 }
 
-/** Comprime a máx 1280px de lado y JPEG 0.8 con canvas. */
+/** Comprime a máx 1024px de lado y JPEG 0.72 con canvas (payload pequeño para
+ * el modelo de visión: menos base64 = respuesta más rápida y fiable). */
 async function compressImage(file: File): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
-  const max = 1280;
+  const max = 1024;
   const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
   const w = Math.round(bitmap.width * scale);
   const h = Math.round(bitmap.height * scale);
@@ -90,13 +91,24 @@ export function FindMyLook() {
       form.append("image", compressed, "look.jpg");
       const res = await fetch("/api/find-look", { method: "POST", body: form });
       setStep(2);
-      const data = await res.json();
+      // La respuesta puede no ser JSON (p. ej. timeout de la función devuelve
+      // texto): se lee como texto y se intenta parsear con un mensaje amable.
+      const raw = await res.text();
+      let data: Record<string, unknown> = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        setError(
+          "El análisis ha tardado demasiado. Prueba de nuevo en un momento o con una imagen más sencilla."
+        );
+        return;
+      }
       if (!res.ok) {
-        setError(data.error ?? "No hemos podido analizar el look.");
+        setError((data.error as string) ?? "No hemos podido analizar el look.");
       } else if (data.message) {
-        setError(data.message);
+        setError(data.message as string);
       } else {
-        setResult(data);
+        setResult(data as unknown as SearchResult);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error inesperado");

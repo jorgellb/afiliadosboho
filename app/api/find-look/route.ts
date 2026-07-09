@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 import { decomposeLook, matchItem, Match } from "@/lib/find-look";
 
-// Máximo permitido en Vercel Hobby.
-export const maxDuration = 60;
+// Margen para el peor caso (si el modelo rápido se cuelga y cae al lento ~27s).
+export const maxDuration = 120;
 
 const MAX_BYTES = 2 * 1024 * 1024; // 2 MB tras compresión en cliente
 const SESSION_COOKIE = "look_session";

@@ -152,9 +152,11 @@ export async function callNvidia(
           lastError = error;
           const status = (error as { status?: number }).status;
           const isTimeout = error instanceof Error && error.name === "TimeoutError";
-          const retriable = isTimeout || status === 429 || (status && status >= 500);
-          // 403 o error no reintentable → siguiente modelo directamente.
-          if (!retriable) break;
+          // Un timeout significa que el modelo está colgado/degradado: NO se
+          // reintenta el mismo (gastaría otro timeout entero), se pasa al
+          // siguiente. Solo se reintenta ante 429/5xx (transitorios).
+          const retriable = status === 429 || (status && status >= 500);
+          if (isTimeout || !retriable) break;
         }
       }
     }
