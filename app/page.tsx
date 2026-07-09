@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CATEGORIES } from "@/lib/db/schema";
 import { getStoreProducts, parseStoreFilters, StoreFilters } from "@/lib/products";
+import { CategoryIcon } from "./components/category-icon";
 import { DiscountBadge, SocialRow } from "./components/social-proof";
 
 export const dynamic = "force-dynamic";
@@ -105,6 +106,7 @@ export default async function StorePage({
             href={`/?category=${c}`}
             className={filters.category === c ? "active" : undefined}
           >
+            <CategoryIcon name={c} />
             {c}
           </Link>
         ))}

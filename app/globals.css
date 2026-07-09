@@ -394,7 +394,10 @@ a {
 }
 
 .nav-drawer-cats a {
-  padding: 0.5rem 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.8rem;
   font-size: 0.85rem;
   text-decoration: none;
   border: 1.5px solid var(--line);
@@ -631,7 +634,10 @@ a {
 }
 
 .collections a {
-  padding: 0.5rem 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 1rem;
   text-align: center;
   font-size: 0.9rem;
   letter-spacing: 0;
@@ -648,6 +654,21 @@ a {
 .collections a.active {
   background: var(--sage);
   border-color: var(--sage);
+  color: #fff;
+}
+
+/* Iconos de categoría: acompañan al texto, en salvia; blancos al activarse. */
+.cat-icon {
+  width: 1.15em;
+  height: 1.15em;
+  flex: 0 0 auto;
+  color: var(--sage-deep);
+  transition: color 0.25s;
+}
+
+.collections a:hover .cat-icon,
+.collections a.active .cat-icon,
+.nav-drawer-cats a:hover .cat-icon {
   color: #fff;
 }
 

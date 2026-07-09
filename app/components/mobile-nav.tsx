@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { CategoryIcon } from "./category-icon";
 
 /**
  * Navegación móvil: botón hamburguesa en el cabecero y cajón lateral.
@@ -120,6 +121,7 @@ export function MobileNav() {
         <nav className="nav-drawer-cats" aria-label="Colecciones">
           {COLLECTIONS.map((category) => (
             <Link key={category} href={`/?category=${category}`}>
+              <CategoryIcon name={category} />
               {category}
             </Link>
           ))}
