@@ -181,8 +181,16 @@ Responde SOLO con este JSON válido, sin texto extra:
 
 /** Genera artículos para los temas que aún no existen (uno o varios). */
 export async function generateArticles(limit: number = 1): Promise<ContentSummary> {
-  const existing = await db.select({ slug: articles.slug }).from(articles);
+  const existing = await db
+    .select({ slug: articles.slug, productIds: articles.productIds, hero: articles.heroImageUrl })
+    .from(articles);
   const existingSlugs = new Set(existing.map((a) => a.slug));
+  // Para no repetir piezas ni imágenes: se parte de lo ya usado por otros posts.
+  const usedProducts = new Set<string>(existing.flatMap((a) => a.productIds));
+  const usedHeroes = new Set<string>(
+    existing.map((a) => a.hero).filter((h): h is string => h !== null)
+  );
+
   const pending = TOPICS.filter((t) => !existingSlugs.has(slugify(t.title))).slice(
     0,
     Math.max(1, limit)
@@ -191,7 +199,7 @@ export async function generateArticles(limit: number = 1): Promise<ContentSummar
   const summary: ContentSummary = { generated: 0, errors: [] };
   for (const topic of pending) {
     try {
-      const featured = await db
+      const candidates = await db
         .select()
         .from(products)
         .where(
@@ -202,7 +210,13 @@ export async function generateArticles(limit: number = 1): Promise<ContentSummar
           )
         )
         .orderBy(desc(products.clicks), desc(products.createdAt))
-        .limit(6);
+        .limit(40);
+      // Prioriza piezas aún no usadas por otros artículos; rellena si faltan.
+      const fresh = candidates.filter((p) => !usedProducts.has(p.id));
+      const featured = [...fresh, ...candidates.filter((p) => usedProducts.has(p.id))].slice(0, 6);
+      featured.forEach((p) => usedProducts.add(p.id));
+      const hero = featured.find((p) => !usedHeroes.has(p.imageUrl)) ?? featured[0];
+      if (hero) usedHeroes.add(hero.imageUrl);
 
       const copy = await writeArticle(topic, featured);
       const value: NewArticle = {
@@ -213,7 +227,7 @@ export async function generateArticles(limit: number = 1): Promise<ContentSummar
         excerpt: copy.excerpt,
         body: copy.body,
         category: topic.category,
-        heroImageUrl: featured[0]?.imageUrl ?? null,
+        heroImageUrl: hero?.imageUrl ?? null,
         productIds: featured.map((p) => p.id),
       };
       await db.insert(articles).values(value).onConflictDoNothing();
