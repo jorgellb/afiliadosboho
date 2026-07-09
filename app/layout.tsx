@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Fraunces, Mulish } from "next/font/google";
 import { ChatWidget } from "./components/chat-widget";
+import { MobileNav } from "./components/mobile-nav";
 import "./globals.css";
 
 // Fraunces: serif suave y cálida (boho amable) para títulos.
@@ -48,6 +49,7 @@ export default function RootLayout({
             <span aria-hidden>·</span>
             <Link href="/asistente">Estilista</Link>
           </nav>
+          <MobileNav />
         </header>
         <main>{children}</main>
         <footer className="site-footer">
