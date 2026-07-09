@@ -204,6 +204,7 @@ export async function decomposeLook(imageDataUri: string): Promise<LookDecomposi
   ];
   const { data } = await callNvidiaJson<LookDecomposition>(messages, {
     needsVision: true,
+    visionOnly: true, // el modelo de solo texto no puede "ver" el outfit
     label: "descomponer",
     maxTokens: 1200,
   });

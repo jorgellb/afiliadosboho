@@ -40,6 +40,8 @@ export interface CallOptions {
   temperature?: number;
   /** La tarea usa imagen: si se cae al modelo de solo texto, se avisa. */
   needsVision?: boolean;
+  /** Solo modelos con visión (no tiene sentido caer a texto; falla antes). */
+  visionOnly?: boolean;
   label?: string;
 }
 
@@ -136,7 +138,10 @@ export async function callNvidia(
     const backoff = [0, 1000];
     let lastError: unknown;
 
-    for (const model of MODEL_CHAIN) {
+    const chain = opts.visionOnly
+      ? MODEL_CHAIN.filter((m) => m.vision)
+      : MODEL_CHAIN;
+    for (const model of chain) {
       // Si la tarea necesita visión y este modelo no la tiene, es el degradado.
       const visionUsed = !opts.needsVision || model.vision;
 
@@ -277,7 +282,7 @@ export async function callNvidiaJson<T>(
           content: `Convierte esto en JSON válido y devuélvelo tal cual, sin explicaciones:\n${res.content.slice(0, 2000)}`,
         },
       ],
-      { ...opts, needsVision: false, maxTokens: opts.maxTokens ?? 1024 }
+      { ...opts, needsVision: false, visionOnly: false, maxTokens: opts.maxTokens ?? 1024 }
     );
     parsed = tryParse(repair.content);
     if (parsed === null) {
