@@ -15,12 +15,17 @@ const BASE_URL =
 interface ModelSpec {
   id: string;
   vision: boolean;
+  /** Timeout propio: correa corta para los rápidos, margen para los lentos. */
+  timeoutMs: number;
 }
 
 const MODEL_CHAIN: ModelSpec[] = [
-  { id: "meta/llama-4-maverick-17b-128e-instruct", vision: true },
-  { id: "minimaxai/minimax-m3", vision: true },
-  { id: "nvidia/llama-3.3-nemotron-super-49b-v1", vision: false },
+  // Maverick suele responder en ~3s; si no contesta en 18s está colgado y se
+  // pasa al siguiente (no tiene sentido esperar más).
+  { id: "meta/llama-4-maverick-17b-128e-instruct", vision: true, timeoutMs: 18_000 },
+  // minimax-m3 con imagen tarda ~27-35s de forma legítima: necesita margen.
+  { id: "minimaxai/minimax-m3", vision: true, timeoutMs: 44_000 },
+  { id: "nvidia/llama-3.3-nemotron-super-49b-v1", vision: false, timeoutMs: 25_000 },
 ];
 
 export type NvidiaContent =
@@ -106,7 +111,7 @@ async function requestModel(
       stream: false,
     }),
     cache: "no-store",
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(model.timeoutMs),
   });
 
   if (!response.ok) {
