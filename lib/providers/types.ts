@@ -19,10 +19,18 @@ export interface NormalizedProduct {
   discountPct: number | null; // % de descuento
 }
 
+/** Filtros opcionales del buscador del panel. */
+export interface SearchOptions {
+  /** Precio en la moneda de destino (EUR), no en céntimos. */
+  minPrice?: number;
+  maxPrice?: number;
+  sort?: "relevancia" | "precio_asc" | "precio_desc" | "ventas";
+}
+
 export interface ProductProvider {
   readonly source: Source;
   /** Busca productos por texto libre (para el panel admin). */
-  search(query: string, page: number): Promise<NormalizedProduct[]>;
+  search(query: string, page: number, options?: SearchOptions): Promise<NormalizedProduct[]>;
   /** Recupera productos por sus IDs de origen (para el cron de precios). */
   getByIds(ids: string[]): Promise<NormalizedProduct[]>;
 }

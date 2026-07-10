@@ -3,6 +3,7 @@ import {
   NormalizedProduct,
   ProductProvider,
   ProviderError,
+  SearchOptions,
   requireEnv,
 } from "./types";
 
@@ -161,8 +162,21 @@ function normalizeProduct(p: AliProduct): NormalizedProduct | null {
 export const aliexpressProvider: ProductProvider = {
   source: "aliexpress",
 
-  async search(query: string, page: number): Promise<NormalizedProduct[]> {
+  async search(
+    query: string,
+    page: number,
+    options: SearchOptions = {}
+  ): Promise<NormalizedProduct[]> {
     const { trackingId, currency, language, shipTo } = config();
+    // AliExpress espera los precios en céntimos de la moneda de destino.
+    const cents = (value: number) => String(Math.round(value * 100));
+    const SORTS: Record<string, string> = {
+      precio_asc: "SALE_PRICE_ASC",
+      precio_desc: "SALE_PRICE_DESC",
+      ventas: "LAST_VOLUME_DESC",
+    };
+    const sort = options.sort ? SORTS[options.sort] : undefined;
+
     // hotproduct.query prioriza productos que se venden y aporta descuento y,
     // cuando existe, valoración; mejor para una tienda de afiliados.
     const data = await aliRequest("aliexpress.affiliate.hotproduct.query", {
@@ -173,10 +187,36 @@ export const aliexpressProvider: ProductProvider = {
       target_currency: currency,
       target_language: language,
       ...(shipTo ? { ship_to_country: shipTo } : {}),
+      ...(options.minPrice !== undefined ? { min_sale_price: cents(options.minPrice) } : {}),
+      ...(options.maxPrice !== undefined ? { max_sale_price: cents(options.maxPrice) } : {}),
+      ...(sort ? { sort } : {}),
     });
-    return extractProducts(data, "aliexpress_affiliate_hotproduct_query_response")
+
+    let products = extractProducts(data, "aliexpress_affiliate_hotproduct_query_response")
       .map(normalizeProduct)
       .filter((p): p is NormalizedProduct => p !== null);
+
+    // AliExpress filtra y ordena por su propio precio, no por el que devuelve
+    // convertido a euros: comprobado, con min=25 y max=40 la mitad se salía de
+    // la banda. Sus parámetros sirven para acotar la búsqueda, pero el filtro
+    // que vale es este, sobre el precio que de verdad se muestra.
+    const { minPrice, maxPrice } = options;
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      products = products.filter((p) => {
+        if (p.price === null) return false;
+        const value = Number(p.price);
+        if (minPrice !== undefined && value < minPrice) return false;
+        if (maxPrice !== undefined && value > maxPrice) return false;
+        return true;
+      });
+    }
+    if (options.sort === "precio_asc" || options.sort === "precio_desc") {
+      const dir = options.sort === "precio_asc" ? 1 : -1;
+      products.sort((a, b) => dir * (Number(a.price ?? 0) - Number(b.price ?? 0)));
+    } else if (options.sort === "ventas") {
+      products.sort((a, b) => (b.ordersCount ?? 0) - (a.ordersCount ?? 0));
+    }
+    return products;
   },
 
   async getByIds(ids: string[]): Promise<NormalizedProduct[]> {
