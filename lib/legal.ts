@@ -37,4 +37,9 @@ export const PROCESSORS = [
     role: "Caché temporal de resultados del catálogo (si está activada)",
     country: "UE / EE. UU.",
   },
+  {
+    name: "Resend (Plus Five Five, Inc.)",
+    role: "Envío de los correos del boletín y de los avisos de la tienda",
+    country: "UE (Irlanda)",
+  },
 ] as const;

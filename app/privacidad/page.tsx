@@ -62,6 +62,10 @@ export default function PrivacyPage() {
         <strong>tu consentimiento</strong>, que puedes retirar cuando quieras
         escribiéndonos. Conservamos el dato hasta que pidas la baja.
       </p>
+      <p>
+        Los correos se envían a través de Resend, con servidores en la Unión
+        Europea. Cada envío incluye un enlace para darte de baja en un clic.
+      </p>
 
       <h3>Buscador por imagen («Encuentra este look»)</h3>
       <p>
@@ -101,7 +105,9 @@ export default function PrivacyPage() {
       <p>
         Nuestro proveedor de alojamiento registra datos técnicos de las
         peticiones (dirección IP, fecha y hora, navegador) en los registros del
-        servidor, como cualquier servidor web. La base legal es nuestro{" "}
+        servidor, como cualquier servidor web. Para frenar el abuso de los
+        formularios contamos temporalmente las peticiones por dirección IP
+        durante unos segundos, sin guardarlas después. La base legal es nuestro{" "}
         <strong>interés legítimo</strong> en mantener el servicio seguro y
         operativo.
       </p>

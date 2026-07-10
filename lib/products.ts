@@ -491,19 +491,25 @@ export async function getProductsByProfile(
   return [...rows, ...extra.filter((r) => !seen.has(r.id))].slice(0, limit);
 }
 
-/** Guarda un suscriptor (quiz o newsletter); ignora si el email ya existe. */
+/**
+ * Guarda o actualiza un suscriptor (quiz o newsletter). Devuelve si es un alta
+ * nueva, para no repetirle la bienvenida a quien rehace el test: en un upsert de
+ * Postgres, `xmax = 0` solo en las filas realmente insertadas.
+ */
 export async function addSubscriber(
   email: string,
   source: string,
   styleResult: string | null
-): Promise<void> {
-  await db
+): Promise<{ isNew: boolean }> {
+  const rows = await db
     .insert(subscribers)
     .values({ email: email.toLowerCase(), source, styleResult })
     .onConflictDoUpdate({
       target: subscribers.email,
       set: { styleResult, source },
-    });
+    })
+    .returning({ inserted: sql<boolean>`(xmax = 0)` });
+  return { isNew: rows[0]?.inserted === true };
 }
 
 /** IDs de origen ya guardados, para marcar duplicados en la búsqueda admin. */

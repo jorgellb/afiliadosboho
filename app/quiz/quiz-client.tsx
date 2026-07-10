@@ -85,6 +85,8 @@ export function QuizClient() {
         email,
         source: "quiz",
         styleResult: result?.name ?? null,
+        // La clave del perfil deja armar el correo con sus piezas.
+        profile: result?.profile ?? null,
       }),
     });
     const data = await res.json().catch(() => ({}));
