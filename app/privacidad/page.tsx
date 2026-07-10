@@ -28,6 +28,10 @@ export default function PrivacyPage() {
           <span>{LEGAL.owner}</span>
         </li>
         <li>
+          <span>Nombre comercial</span>
+          <span>{LEGAL.tradeName}</span>
+        </li>
+        <li>
           <span>NIF</span>
           <span>{LEGAL.nif}</span>
         </li>
@@ -37,11 +41,13 @@ export default function PrivacyPage() {
         </li>
         <li>
           <span>Contacto</span>
-          <span>{LEGAL.email}</span>
+          <span>
+            <a href={`mailto:${LEGAL.email}`}>{LEGAL.email}</a>
+          </span>
         </li>
         <li>
           <span>Sitio web</span>
-          <span>bohochic.es</span>
+          <span>{LEGAL.site}</span>
         </li>
       </ul>
 
@@ -190,8 +196,9 @@ export default function PrivacyPage() {
         <strong>rectificación</strong>, <strong>supresión</strong>,{" "}
         <strong>oposición</strong>, <strong>limitación</strong> y{" "}
         <strong>portabilidad</strong>, y retirar tu consentimiento en cualquier
-        momento, escribiendo a {LEGAL.email}. Te responderemos en el plazo de un
-        mes.
+        momento, escribiendo a{" "}
+        <a href={`mailto:${LEGAL.email}`}>{LEGAL.email}</a> o por correo postal
+        a {LEGAL.address}. Te responderemos en el plazo de un mes.
       </p>
       <p>
         Si consideras que no hemos atendido bien tu solicitud, puedes reclamar

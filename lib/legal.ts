@@ -1,15 +1,16 @@
 /**
- * Datos legales del sitio.
- *
- * ⚠️ RELLENAR ANTES DE PUBLICAR: la identidad del responsable y un medio de
- * contacto son obligatorios (art. 13 RGPD y art. 10 LSSI-CE). Los corchetes
- * marcan lo que falta.
+ * Datos legales del sitio: identidad del responsable y medio de contacto,
+ * obligatorios por el art. 13 RGPD y el art. 10 LSSI-CE.
  */
 export const LEGAL = {
-  owner: "[NOMBRE Y APELLIDOS O RAZÓN SOCIAL]",
-  nif: "[NIF / CIF]",
-  address: "[DOMICILIO COMPLETO]",
-  email: "[CORREO DE CONTACTO]",
+  /** Razón social: es la entidad titular del CIF y la responsable. */
+  owner: "Boho Chic España, S.L.",
+  /** Nombre comercial con el que opera la tienda. */
+  tradeName: "Boho Chic España",
+  nif: "B90344300",
+  address: "Calle Alborada, 4, 04621 Vera, Almería, España",
+  email: "info@bohochic.es",
+  site: "bohochic.es",
   /** Fecha de la última revisión de las políticas. */
   updated: "10 de julio de 2026",
 } as const;
