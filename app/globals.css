@@ -739,6 +739,7 @@ a {
   flex: 1;
   min-width: 8rem;
   border: none;
+  border-radius: 0;
   background: transparent;
   font: inherit;
   font-size: 1rem;
@@ -766,6 +767,8 @@ a {
 .toolbar-price input {
   width: 4.6rem;
   border: none;
+  /* Sin esto, el radio de la regla base curva el subrayado en las esquinas. */
+  border-radius: 0;
   border-bottom: 1px solid var(--line);
   background: transparent;
   font: inherit;
@@ -821,9 +824,11 @@ a {
   border-bottom-color: var(--terracotta);
 }
 
-/* Campos y botones base. Las casillas y radios se quedan nativos: el relleno
-   y el borde de abajo los deformaban. */
-input:not([type="checkbox"]):not([type="radio"]),
+/* Campos y botones base. Ojo con el selector: excluir aquí las casillas con
+   :not([type=checkbox]) subiría la especificidad a (0,2,1) y esta regla pasaría
+   por encima de .toolbar-search, .toolbar-price input y demás campos con estilo
+   propio. Las casillas se devuelven a su aspecto nativo en la regla siguiente. */
+input,
 select,
 textarea {
   font: inherit;
@@ -842,6 +847,25 @@ textarea:focus {
   outline: none;
   border-color: var(--sage);
   background: #fff;
+}
+
+/* Casillas y radios: nativos. El relleno y el borde de la regla anterior los
+   deformaban. Con (0,1,1) gana a la base sin pisar a las clases propias. */
+input[type="checkbox"],
+input[type="radio"] {
+  appearance: auto;
+  -webkit-appearance: auto;
+  width: auto;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  accent-color: var(--sage-deep);
+}
+
+input[type="checkbox"]:focus,
+input[type="radio"]:focus {
+  background: none;
 }
 
 button {
@@ -3089,6 +3113,24 @@ form.stacked {
   flex: 1 1 16rem;
 }
 
+/* Ancho atado al contenedor: si no, los dos campos numéricos lo dimensionan
+   por su ancho intrínseco y se salen de la tarjeta. */
+.find-prices {
+  display: flex;
+  gap: 0.7rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.find-prices label {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.find-prices input {
+  width: 100%;
+}
+
 .find-row button {
   flex: 0 0 auto;
   min-height: 44px;
@@ -3192,6 +3234,14 @@ form.stacked {
   .find-row {
     flex-direction: column;
     align-items: stretch;
+    gap: 0.6rem;
+  }
+  /* En columna, un flex-basis en rem se lee como ALTO: estiraba el campo. */
+  .find-grow {
+    flex: 0 0 auto;
+  }
+  .find-row button {
+    width: 100%;
   }
   .find-bar {
     flex-direction: column;
@@ -4140,8 +4190,28 @@ form.stacked {
     align-items: stretch;
     gap: 0.7rem;
   }
+  /* `flex: 1 1 460px` estaba pensado para la fila de escritorio: al pasar a
+     columna, ese 460px se convierte en ALTO y estiraba el formulario. */
   .toolbar-form {
+    flex: 0 0 auto;
     flex-wrap: wrap;
+    gap: 0.5rem 0.7rem;
+  }
+  /* El buscador ocupa su línea; precio y botón comparten la siguiente. */
+  .toolbar-search {
+    flex: 1 1 12rem;
+    padding: 0.6rem 0;
+  }
+  .toolbar-price {
+    flex: 1 1 auto;
+  }
+  .toolbar-price input {
+    width: 100%;
+    min-width: 3.5rem;
+  }
+  .toolbar-form button {
+    flex: 1 1 100%;
+    min-height: 44px;
   }
   .toolbar-sort {
     justify-content: space-between;

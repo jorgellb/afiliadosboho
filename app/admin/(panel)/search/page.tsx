@@ -208,28 +208,31 @@ export default function AdminSearchPage() {
           </div>
 
           <div className="find-row">
-            <label>
-              Precio mín. (€)
-              <input
-                type="number"
-                min="0"
-                step="1"
-                value={minPrice}
-                placeholder="0"
-                onChange={(e) => setMinPrice(e.target.value)}
-              />
-            </label>
-            <label>
-              Precio máx. (€)
-              <input
-                type="number"
-                min="0"
-                step="1"
-                value={maxPrice}
-                placeholder="sin límite"
-                onChange={(e) => setMaxPrice(e.target.value)}
-              />
-            </label>
+            {/* Los dos precios van juntos: apilados comen media pantalla. */}
+            <div className="find-prices">
+              <label>
+                Precio mín. (€)
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={minPrice}
+                  placeholder="0"
+                  onChange={(e) => setMinPrice(e.target.value)}
+                />
+              </label>
+              <label>
+                Precio máx. (€)
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={maxPrice}
+                  placeholder="sin límite"
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                />
+              </label>
+            </div>
             <label>
               Ordenar por
               <select value={sort} onChange={(e) => setSort(e.target.value)}>
