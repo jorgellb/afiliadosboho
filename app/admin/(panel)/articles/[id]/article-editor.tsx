@@ -60,6 +60,7 @@ export function ArticleEditor({ article, catalog, internalLinks }: Props) {
   const [tab, setTab] = useState<"escribir" | "previsualizar">("escribir");
   const [linkOpen, setLinkOpen] = useState(false);
   const [imgOpen, setImgOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [productQuery, setProductQuery] = useState("");
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
@@ -123,51 +124,68 @@ export function ArticleEditor({ article, catalog, internalLinks }: Props) {
     setImgOpen(false);
   }
 
+  // Todas las llamadas van en try/finally: si se cae la red, `busy` tiene que
+  // volver a null o el editor se queda con todos los botones deshabilitados.
   async function save() {
     setBusy("guardar");
     setMsg(null);
-    const res = await fetch(`/api/admin/articles/${article.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    const data = await res.json().catch(() => ({}));
-    setBusy(null);
-    if (res.ok) {
-      setMsg({ kind: "ok", text: "Guardado" });
-      router.refresh();
-    } else {
-      setMsg({ kind: "error", text: data.error ?? "No se pudo guardar" });
+    try {
+      const res = await fetch(`/api/admin/articles/${article.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setMsg({ kind: "ok", text: "Guardado" });
+        router.refresh();
+      } else {
+        setMsg({ kind: "error", text: data.error ?? "No se pudo guardar" });
+      }
+    } catch {
+      setMsg({ kind: "error", text: "No se pudo conectar. Revisa tu conexión." });
+    } finally {
+      setBusy(null);
     }
   }
 
   async function ai(action: "meta" | "excerpt" | "alt") {
     setBusy(action);
     setMsg(null);
-    const res = await fetch(`/api/admin/articles/${article.id}/ai`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action }),
-    });
-    const data = await res.json().catch(() => ({}));
-    setBusy(null);
-    if (!res.ok) {
-      setMsg({ kind: "error", text: data.error ?? "La IA falló" });
-      return;
+    try {
+      const res = await fetch(`/api/admin/articles/${article.id}/ai`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMsg({ kind: "error", text: data.error ?? "La IA falló" });
+        return;
+      }
+      setForm((f) => ({ ...f, ...data }));
+      setMsg({ kind: "ok", text: "La IA ha rellenado el campo. Revísalo y guarda." });
+    } catch {
+      setMsg({ kind: "error", text: "No se pudo conectar con la IA." });
+    } finally {
+      setBusy(null);
     }
-    setForm((f) => ({ ...f, ...data }));
-    setMsg({ kind: "ok", text: "La IA ha rellenado el campo. Revísalo y guarda." });
   }
 
   async function remove() {
-    if (!confirm(`¿Eliminar «${form.title}»? No se puede deshacer.`)) return;
     setBusy("borrar");
-    const res = await fetch(`/api/admin/articles/${article.id}`, { method: "DELETE" });
-    if (res.ok) router.push("/admin/articles");
-    else {
-      setBusy(null);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/admin/articles/${article.id}`, { method: "DELETE" });
+      if (res.ok) {
+        router.push("/admin/articles");
+        return; // Se navega fuera: no hace falta soltar `busy`.
+      }
       setMsg({ kind: "error", text: "No se pudo eliminar" });
+    } catch {
+      setMsg({ kind: "error", text: "No se pudo conectar." });
     }
+    setBusy(null);
   }
 
   const titleLen = form.metaTitle.length;
@@ -487,9 +505,36 @@ export function ArticleEditor({ article, catalog, internalLinks }: Props) {
 
           <div className="admin-card">
             <h2>Zona peligrosa</h2>
-            <button type="button" className="secondary danger" onClick={remove} disabled={busy !== null}>
-              Eliminar artículo
-            </button>
+            {!confirmDelete ? (
+              <button
+                type="button"
+                className="secondary danger"
+                onClick={() => setConfirmDelete(true)}
+                disabled={busy !== null}
+              >
+                Eliminar artículo
+              </button>
+            ) : (
+              <>
+                <p className="art-warn">
+                  Se borrará «{form.title}» y su URL dejará de existir. No se
+                  puede deshacer.
+                </p>
+                <div className="art-dialog-actions">
+                  <button
+                    type="button"
+                    className="secondary danger"
+                    onClick={remove}
+                    disabled={busy !== null}
+                  >
+                    {busy === "borrar" ? "Eliminando…" : "Sí, eliminar"}
+                  </button>
+                  <button type="button" className="secondary" onClick={() => setConfirmDelete(false)}>
+                    Cancelar
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

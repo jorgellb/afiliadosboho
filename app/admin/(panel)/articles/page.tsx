@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAllArticles } from "@/lib/articles";
+import { DeleteArticleButton } from "./delete-article-button";
 import { NewArticleButton } from "./new-article-button";
 
 export const dynamic = "force-dynamic";
@@ -78,6 +79,7 @@ export default async function AdminArticlesPage() {
                         Ver ↗
                       </Link>
                     )}
+                    <DeleteArticleButton id={a.id} title={a.title} />
                   </td>
                 </tr>
               ))}

@@ -3368,6 +3368,45 @@ form.stacked {
   text-decoration: none;
 }
 
+/* Borrar desde el listado: dos pasos, sin diálogo del navegador. */
+.art-del {
+  padding: 0.3rem 0.7rem;
+  min-height: 0;
+  font-size: 0.78rem;
+  background: transparent;
+  color: var(--terracotta-dark);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-pill);
+}
+
+.art-del:hover {
+  background: var(--terracotta);
+  border-color: var(--terracotta);
+  color: #fff;
+}
+
+/* En su propia línea dentro de la celda: en horizontal se salía de la tabla. */
+.art-confirm {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+  font-size: 0.76rem;
+}
+
+.art-confirm .secondary {
+  padding: 0.3rem 0.7rem;
+  min-height: 0;
+  font-size: 0.78rem;
+}
+
+.art-del-error {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.74rem;
+  color: var(--terracotta-dark);
+}
+
 .art-slug {
   display: block;
   font-size: 0.74rem;

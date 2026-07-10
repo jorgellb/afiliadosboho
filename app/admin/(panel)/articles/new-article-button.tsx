@@ -15,18 +15,23 @@ export function NewArticleButton() {
     event.preventDefault();
     setBusy(true);
     setError(null);
-    const res = await fetch("/api/admin/articles", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.ok) {
-      router.push(`/admin/articles/${data.id}`);
-    } else {
+    try {
+      const res = await fetch("/api/admin/articles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        router.push(`/admin/articles/${data.id}`);
+        return; // Se navega fuera del listado.
+      }
       setError(data.error ?? "No se pudo crear");
-      setBusy(false);
+    } catch {
+      // Sin esto, un fallo de red dejaría el botón en «Creando…» para siempre.
+      setError("No se pudo conectar. Revisa tu conexión.");
     }
+    setBusy(false);
   }
 
   if (!open) {
