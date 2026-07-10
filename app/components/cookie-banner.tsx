@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   ACCEPT_ALL,
   Consent,
@@ -20,13 +21,16 @@ import {
  * - Nada opcional viene premarcado y no hay muro de cookies: la web se usa igual.
  */
 export function CookieBanner() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [configuring, setConfiguring] = useState(false);
   const [choice, setChoice] = useState<ConsentChoice>(REJECT_ALL);
   const panelRef = useRef<HTMLDivElement>(null);
+  // El panel es zona autenticada: ahí el aviso solo estorba (tapaba el editor).
+  const inAdmin = pathname.startsWith("/admin");
 
   useEffect(() => {
-    if (!readConsent()) setOpen(true);
+    if (!inAdmin && !readConsent()) setOpen(true);
 
     function onOpenSettings() {
       const saved: Consent | null = readConsent();
@@ -36,7 +40,7 @@ export function CookieBanner() {
     }
     window.addEventListener(OPEN_SETTINGS_EVENT, onOpenSettings);
     return () => window.removeEventListener(OPEN_SETTINGS_EVENT, onOpenSettings);
-  }, []);
+  }, [inAdmin]);
 
   // Escape sale del detalle, pero nunca cierra el aviso sin decisión: no
   // decidir no puede interpretarse como aceptar.
@@ -56,7 +60,7 @@ export function CookieBanner() {
     setConfiguring(false);
   };
 
-  if (!open) return null;
+  if (inAdmin || !open) return null;
 
   return (
     <div

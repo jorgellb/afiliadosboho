@@ -117,6 +117,8 @@ export const articles = pgTable(
     body: text("body").notNull(), // markdown ligero
     category: text("category", { enum: CATEGORIES }).notNull().default("otros"),
     heroImageUrl: text("hero_image_url"),
+    /** Texto alternativo de la imagen destacada (accesibilidad y SEO). */
+    heroImageAlt: text("hero_image_alt"),
     productIds: uuid("product_ids").array().notNull().default([]),
     published: boolean("published").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

@@ -228,6 +228,9 @@ export async function generateArticles(limit: number = 1): Promise<ContentSummar
         body: copy.body,
         category: topic.category,
         heroImageUrl: hero?.imageUrl ?? null,
+        heroImageAlt: hero
+          ? `${hero.seoTitle ?? hero.title} — ${topic.category} boho de Boho Chic`
+          : null,
         productIds: featured.map((p) => p.id),
       };
       await db.insert(articles).values(value).onConflictDoNothing();

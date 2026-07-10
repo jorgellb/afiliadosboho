@@ -83,7 +83,8 @@ export default async function ArticlePage({ params }: Props) {
           <img
             className="article-hero"
             src={article.heroImageUrl}
-            alt={`${article.title} — moda boho de la tienda Boho Chic`}
+            // El alt escrito en el panel manda; si no lo hay, uno descriptivo.
+            alt={article.heroImageAlt ?? `${article.title} — moda boho de la tienda Boho Chic`}
           />
         )}
         <p className="article-cat">{article.category}</p>

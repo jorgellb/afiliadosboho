@@ -37,7 +37,7 @@ export default async function RevistaPage() {
               {a.heroImageUrl && (
                 <Link className="article-cover" href={`/revista/${a.slug}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={a.heroImageUrl} alt={a.title} loading="lazy" />
+                  <img src={a.heroImageUrl} alt={a.heroImageAlt ?? a.title} loading="lazy" />
                 </Link>
               )}
               <div className="article-card-body">
