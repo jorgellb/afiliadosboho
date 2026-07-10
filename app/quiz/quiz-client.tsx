@@ -121,6 +121,16 @@ export function QuizClient() {
               />
               <button type="submit">Enviármela</button>
             </div>
+            {/* Consentimiento explícito y sin premarcar (RGPD art. 6.1.a). */}
+            <label className="quiz-consent">
+              <input type="checkbox" name="consent" required />
+              <span>
+                Acepto que se traten mi correo y mi perfil de estilo para
+                recibir esta selección y las novedades, según la{" "}
+                <Link href="/privacidad">política de privacidad</Link>. Puedo
+                darme de baja cuando quiera.
+              </span>
+            </label>
             {subState === "error" && subMsg && (
               <p className="error-msg">{subMsg}</p>
             )}

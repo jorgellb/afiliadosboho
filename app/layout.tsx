@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Fraunces, Mulish } from "next/font/google";
 import { ChatWidget } from "./components/chat-widget";
+import { CookieBanner, CookieSettingsLink } from "./components/cookie-banner";
 import { MobileNav } from "./components/mobile-nav";
 import "./globals.css";
 
@@ -80,10 +81,15 @@ export default function RootLayout({
                 a través de ellos, podemos recibir una comisión sin coste
                 adicional para ti.
               </p>
+              <p className="footer-legal">
+                <Link href="/privacidad">Privacidad</Link> ·{" "}
+                <Link href="/cookies">Cookies</Link> · <CookieSettingsLink />
+              </p>
             </div>
           </div>
         </footer>
         <ChatWidget />
+        <CookieBanner />
       </body>
     </html>
   );

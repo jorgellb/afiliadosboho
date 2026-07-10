@@ -821,8 +821,9 @@ a {
   border-bottom-color: var(--terracotta);
 }
 
-/* Campos y botones base */
-input,
+/* Campos y botones base. Las casillas y radios se quedan nativos: el relleno
+   y el borde de abajo los deformaban. */
+input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
   font: inherit;
@@ -3042,6 +3043,351 @@ form.stacked {
     bottom: 1.1rem;
     right: 1.1rem;
   }
+
+  /* El aviso ocupa el ancho del móvil, con margen para el área segura. */
+  .cookie-banner {
+    left: 0.7rem;
+    right: 0.7rem;
+    bottom: calc(0.7rem + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    padding: 1.1rem 1.1rem 1.2rem;
+  }
+
+  .cookie-config {
+    flex: 1 1 100%;
+  }
+}
+
+/* ======================================================
+   Páginas legales (privacidad y cookies)
+   ====================================================== */
+
+.legal {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: clamp(2rem, 5vw, 3.6rem) 0 4rem;
+}
+
+.legal-kicker {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  color: var(--sage-deep);
+}
+
+.legal h1 {
+  font-size: clamp(2rem, 5vw, 2.9rem);
+  line-height: 1.1;
+  margin: 0 0 1rem;
+}
+
+.legal-lead {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  margin-bottom: 2.4rem;
+}
+
+.legal h2 {
+  font-size: 1.35rem;
+  margin: 2.6rem 0 0.8rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--line);
+}
+
+.legal h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 1.6rem 0 0.5rem;
+  color: var(--sage-deep);
+}
+
+.legal p {
+  line-height: 1.75;
+  margin: 0 0 1rem;
+}
+
+.legal a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.legal code {
+  font-size: 0.85em;
+  padding: 0.12rem 0.4rem;
+  border-radius: 6px;
+  background: var(--paper-deep);
+}
+
+.legal-warn {
+  padding: 0.9rem 1.1rem;
+  border-left: 3px solid var(--terracotta);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--cream);
+}
+
+.legal-facts {
+  list-style: none;
+  margin: 0 0 1.4rem;
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--cream);
+}
+
+.legal-facts li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 1rem;
+  padding: 0.4rem 0;
+}
+
+.legal-facts li + li {
+  border-top: 1px solid var(--line);
+}
+
+.legal-facts span:first-child {
+  flex: 0 0 8rem;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+/* Las tablas anchas se desplazan solas, nunca la página. */
+.legal-table-wrap {
+  overflow-x: auto;
+  margin: 0 0 1.4rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.legal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.legal-table th,
+.legal-table td {
+  padding: 0.75rem 0.9rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.legal-table th {
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: var(--sage-deep);
+  background: var(--cream);
+  white-space: nowrap;
+}
+
+.legal-table tbody tr + tr {
+  border-top: 1px solid var(--line);
+}
+
+.legal-foot {
+  margin-top: 2.6rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+/* ======================================================
+   Aviso de cookies
+   ====================================================== */
+
+.cookie-banner {
+  position: fixed;
+  z-index: 70;
+  left: 1.2rem;
+  bottom: 1.2rem;
+  width: min(30rem, calc(100vw - 2.4rem));
+  max-height: calc(100vh - 2.4rem);
+  overflow-y: auto;
+  padding: 1.3rem 1.4rem;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  animation: cookie-rise 0.4s ease both;
+}
+
+@keyframes cookie-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.cookie-title {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.cookie-text {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  line-height: 1.65;
+  color: var(--ink-soft);
+}
+
+.cookie-text a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.cookie-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+/* Aceptar y rechazar: mismo tamaño y mismo peso visual (criterio AEPD). */
+.cookie-accept,
+.cookie-reject {
+  flex: 1 1 9rem;
+  min-height: 44px;
+  padding: 0.7rem 1.1rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-pill);
+}
+
+.cookie-accept {
+  background: var(--terracotta);
+  color: #fff;
+}
+
+.cookie-accept:hover {
+  background: var(--terracotta-dark);
+}
+
+.cookie-reject {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.cookie-reject:hover {
+  background: var(--sage-deep);
+  color: #fff;
+}
+
+.cookie-config {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0.7rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-pill);
+}
+
+.cookie-config:hover {
+  background: transparent;
+  border-color: var(--sage);
+  color: var(--sage-deep);
+}
+
+.cookie-groups {
+  list-style: none;
+  margin: 0 0 1.2rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.cookie-groups label {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  padding: 0.7rem 0.6rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.cookie-groups label:hover {
+  background: var(--paper-deep);
+}
+
+.cookie-groups input {
+  margin-top: 0.15rem;
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
+  accent-color: var(--sage-deep);
+}
+
+.cookie-groups input:disabled {
+  cursor: not-allowed;
+}
+
+.cookie-groups span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.cookie-groups strong {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.cookie-groups em {
+  font-style: normal;
+  font-size: 0.79rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+/* Enlace del pie y de la política para reabrir el panel. */
+.cookie-settings-link {
+  padding: 0;
+  min-height: 0;
+  font: inherit;
+  background: none;
+  border: none;
+  border-radius: 0;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.cookie-settings-link:hover {
+  background: none;
+  color: var(--sage-deep);
+}
+
+.footer-legal {
+  margin-top: 0.9rem;
+}
+
+/* Casilla de consentimiento del test de estilo. */
+.quiz-consent {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  margin-top: 0.9rem;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  text-align: left;
+  cursor: pointer;
+}
+
+.quiz-consent input {
+  margin-top: 0.15rem;
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  accent-color: var(--sage-deep);
 }
 
 /* ======================================================
