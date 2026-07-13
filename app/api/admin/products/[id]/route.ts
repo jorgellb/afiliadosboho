@@ -44,6 +44,12 @@ const patchSchema = z
     seoDescription: z.string().trim().max(2000).nullable(),
     metaTitle: z.string().trim().min(3).max(70).nullable(),
     metaDescription: z.string().trim().min(20).max(170).nullable(),
+    // Atributos del feed (Google, Meta, Pinterest).
+    brand: z.string().trim().max(70).nullable(),
+    gtin: z.string().trim().max(50).nullable(),
+    color: z.string().trim().max(100).nullable(),
+    size: z.string().trim().max(50).nullable(),
+    feedExcluded: z.boolean(),
   })
   .partial()
   .refine((data) => Object.keys(data).length > 0, "Sin campos que actualizar");

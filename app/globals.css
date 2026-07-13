@@ -3083,6 +3083,154 @@ form.stacked {
 }
 
 /* ======================================================
+   Feed de productos (panel)
+   ====================================================== */
+
+.feed-intro {
+  margin: -0.6rem 0 1.2rem;
+  max-width: 46rem;
+}
+
+.feed-warn {
+  border-color: var(--terracotta);
+  background: color-mix(in srgb, var(--terracotta) 7%, var(--cream));
+}
+
+.feed-warn h2 {
+  color: var(--terracotta-dark);
+}
+
+.feed-warn p {
+  margin: 0 0 0.7rem;
+  line-height: 1.65;
+  font-size: 0.9rem;
+}
+
+.feed-warn p:last-child {
+  margin-bottom: 0;
+}
+
+.feed-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.feed-head h2 {
+  margin: 0 0 0.2rem;
+}
+
+.feed-head .muted {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.feed-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: 0.7rem;
+  margin: 1rem 0 1.4rem;
+}
+
+.feed-stats .stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--cream);
+  text-align: center;
+}
+
+.stat-num {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+
+.feed-url-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.feed-url-row input {
+  flex: 1 1 18rem;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+}
+
+.feed-url-row button,
+.secondary-btn {
+  flex: 0 0 auto;
+  min-height: 44px;
+}
+
+.secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--ink);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: transparent;
+}
+
+.secondary-btn:hover {
+  border-color: var(--sage);
+  color: var(--sage-deep);
+}
+
+.feed-steps {
+  margin: 0 0 1rem;
+  padding-left: 1.2rem;
+  line-height: 1.7;
+  font-size: 0.9rem;
+}
+
+.feed-steps li {
+  margin-bottom: 0.5rem;
+}
+
+.feed-broken {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.feed-broken li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--cream);
+  font-size: 0.85rem;
+}
+
+.feed-broken .muted {
+  font-size: 0.76rem;
+}
+
+/* ======================================================
    Buscador de productos (panel)
    ====================================================== */
 

@@ -247,6 +247,11 @@ export type ProductPatch = Partial<
     | "seoDescription"
     | "metaTitle"
     | "metaDescription"
+    | "brand"
+    | "gtin"
+    | "color"
+    | "size"
+    | "feedExcluded"
   >
 >;
 

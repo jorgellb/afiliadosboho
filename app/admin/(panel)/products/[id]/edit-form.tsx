@@ -30,6 +30,11 @@ export interface EditableProduct {
   tags: string[];
   available: boolean;
   isActive: boolean;
+  brand: string | null;
+  gtin: string | null;
+  color: string | null;
+  size: string | null;
+  feedExcluded: boolean;
   slug: string | null;
   seoTitle: string | null;
   seoDescription: string | null;
@@ -94,6 +99,11 @@ export function EditForm({ product }: { product: EditableProduct }) {
           .filter(Boolean),
         available: fd.get("available") === "on",
         isActive: fd.get("isActive") === "on",
+        brand: orNull(fd.get("brand")),
+        gtin: orNull(fd.get("gtin")),
+        color: orNull(fd.get("color")),
+        size: orNull(fd.get("size")),
+        feedExcluded: fd.get("feedExcluded") === "on",
         slug: orNull(fd.get("slug")),
         seoTitle: orNull(fd.get("seoTitle")),
         seoDescription: orNull(fd.get("seoDescription")),
@@ -267,6 +277,40 @@ export function EditForm({ product }: { product: EditableProduct }) {
           </label>
           <label>
             <input type="checkbox" name="available" defaultChecked={product.available} /> En stock
+          </label>
+        </div>
+      </div>
+
+      <div className="admin-card">
+        <h2>Feed de productos</h2>
+        <p className="muted">
+          Atributos que piden Google, Meta y Pinterest. El proveedor no los da:
+          se rellenan aquí.
+        </p>
+        <div className="edit-row">
+          <label>
+            Marca
+            <input name="brand" defaultValue={product.brand ?? ""} placeholder="Boho Chic" maxLength={70} />
+          </label>
+          <label>
+            Código de barras (GTIN/EAN)
+            <input name="gtin" defaultValue={product.gtin ?? ""} placeholder="opcional" maxLength={50} />
+          </label>
+        </div>
+        <div className="edit-row">
+          <label>
+            Color
+            <input name="color" defaultValue={product.color ?? ""} placeholder="Crudo" maxLength={100} />
+          </label>
+          <label>
+            Talla
+            <input name="size" defaultValue={product.size ?? ""} placeholder="M" maxLength={50} />
+          </label>
+        </div>
+        <div className="edit-row edit-checks">
+          <label>
+            <input type="checkbox" name="feedExcluded" defaultChecked={product.feedExcluded} /> Fuera
+            del feed (sigue visible en la tienda)
           </label>
         </div>
       </div>

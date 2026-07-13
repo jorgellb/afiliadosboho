@@ -56,6 +56,14 @@ export const products = pgTable(
     rating: numeric("rating", { precision: 4, scale: 1 }), // % de valoraciones positivas 0-100
     ordersCount: integer("orders_count"), // unidades vendidas recientes
     discountPct: integer("discount_pct"), // % de descuento
+    // Atributos del feed de Google Merchant Center (la API de AliExpress no
+    // los da: se rellenan a mano desde el panel).
+    brand: text("brand"),
+    gtin: text("gtin"),
+    color: text("color"),
+    size: text("size"),
+    /** Deja el producto fuera del feed sin ocultarlo de la tienda. */
+    feedExcluded: boolean("feed_excluded").notNull().default(false),
     available: boolean("available").notNull().default(true),
     isActive: boolean("is_active").notNull().default(true),
     clicks: integer("clicks").notNull().default(0),
