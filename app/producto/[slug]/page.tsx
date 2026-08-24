@@ -8,10 +8,6 @@ import {
 } from "@/lib/products";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { DiscountBadge, SocialRow } from "../../components/social-proof";
-import { TryonSection } from "../../components/tryon-section";
-
-// Categorías con accesorios que se pueden probar en cara/orejas/cuello/cabeza.
-const TRYON_CATEGORIES = new Set(["joyeria", "accesorios"]);
 
 export const dynamic = "force-dynamic";
 
@@ -189,16 +185,6 @@ export default async function ProductPage({ params }: Props) {
           </p>
         </div>
       </article>
-
-      {TRYON_CATEGORIES.has(product.category) && (
-        <TryonSection
-          product={{
-            id: product.id,
-            title: displayTitle,
-            imageUrl: product.imageUrl,
-          }}
-        />
-      )}
 
       {look.length >= 2 && (
         <section className="look">

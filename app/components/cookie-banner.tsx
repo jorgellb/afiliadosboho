@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ACCEPT_ALL,
+  CONSENT_EVENT,
   Consent,
   ConsentChoice,
   OPEN_SETTINGS_EVENT,
@@ -12,6 +13,12 @@ import {
   readConsent,
   writeConsent,
 } from "@/lib/consent";
+
+/** El store externo es la cookie; writeConsent avisa con CONSENT_EVENT. */
+function subscribeConsent(onChange: () => void) {
+  window.addEventListener(CONSENT_EVENT, onChange);
+  return () => window.removeEventListener(CONSENT_EVENT, onChange);
+}
 
 /**
  * Aviso de cookies. Criterios de la AEPD que condicionan el diseño:
@@ -22,25 +29,35 @@ import {
  */
 export function CookieBanner() {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [configuring, setConfiguring] = useState(false);
   const [choice, setChoice] = useState<ConsentChoice>(REJECT_ALL);
   const panelRef = useRef<HTMLDivElement>(null);
   // El panel es zona autenticada: ahí el aviso solo estorba (tapaba el editor).
   const inAdmin = pathname.startsWith("/admin");
 
-  useEffect(() => {
-    if (!inAdmin && !readConsent()) setOpen(true);
+  // La decisión vive en la cookie, no en React: se lee como store externo en
+  // vez de copiarla a un estado desde un efecto. El snapshot de servidor dice
+  // "ya decidió" para que el aviso no viaje en el HTML y no parpadee a quien
+  // ya respondió; tras hidratar se corrige solo. writeConsent emite
+  // CONSENT_EVENT, así que guardar cierra el aviso sin estado extra.
+  const decided = useSyncExternalStore(
+    subscribeConsent,
+    () => readConsent() !== null,
+    () => true
+  );
+  const open = !inAdmin && (settingsOpen || !decided);
 
+  useEffect(() => {
     function onOpenSettings() {
       const saved: Consent | null = readConsent();
       setChoice(saved ? { analytics: saved.analytics, personalization: saved.personalization } : REJECT_ALL);
       setConfiguring(true);
-      setOpen(true);
+      setSettingsOpen(true);
     }
     window.addEventListener(OPEN_SETTINGS_EVENT, onOpenSettings);
     return () => window.removeEventListener(OPEN_SETTINGS_EVENT, onOpenSettings);
-  }, [inAdmin]);
+  }, []);
 
   // Escape sale del detalle, pero nunca cierra el aviso sin decisión: no
   // decidir no puede interpretarse como aceptar.
@@ -56,7 +73,7 @@ export function CookieBanner() {
 
   const decide = (value: ConsentChoice) => {
     writeConsent(value);
-    setOpen(false);
+    setSettingsOpen(false);
     setConfiguring(false);
   };
 

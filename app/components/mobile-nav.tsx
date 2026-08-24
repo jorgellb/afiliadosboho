@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -36,22 +36,28 @@ const COLLECTIONS = [
   "accesorios",
 ];
 
+/** Suscripción vacía: el "montado" no cambia una vez hidratado. */
+const subscribeNothing = () => () => {};
+
 export function MobileNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
 
-  // El portal necesita el DOM: solo tras hidratar.
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // El portal necesita el DOM: solo tras hidratar. Se pregunta al "store"
+  // externo que es el propio entorno (servidor: false, cliente: true) en vez
+  // de encender un estado desde un efecto, que provoca un render en cascada.
+  const mounted = useSyncExternalStore(subscribeNothing, () => true, () => false);
 
-  // Al navegar, el cajón se cierra solo.
-  useEffect(() => {
+  // Al navegar, el cajón se cierra solo. Se ajusta durante el render (patrón
+  // "adjusting state when a prop changes"): React descarta este render y
+  // rehace el árbol antes de pintar, sin el parpadeo de hacerlo en un efecto.
+  const [lastPathname, setLastPathname] = useState(pathname);
+  if (lastPathname !== pathname) {
+    setLastPathname(pathname);
     setOpen(false);
-  }, [pathname]);
+  }
 
   // Con el cajón abierto: bloqueo del scroll de fondo, foco dentro y Escape cierra.
   useEffect(() => {
