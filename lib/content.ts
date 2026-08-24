@@ -11,6 +11,7 @@ import {
 import { callModel } from "@/lib/assistant";
 import { slugify } from "@/lib/seo";
 import { bumpCacheVersion } from "@/lib/cache";
+import { collectionHref } from "@/lib/collections";
 
 /**
  * Motor de contenido SEO: la IA redacta artículos editoriales de moda boho
@@ -58,6 +59,12 @@ const CATEGORY_PATTERNS: Array<[RegExp, Category]> = [
 /**
  * Convierte la primera mención de cada categoría (fuera de encabezados) en un
  * enlace interno a su página. Máximo 4 enlaces para no sobre-enlazar.
+ *
+ * Apunta a la URL de COLECCIÓN (/vestidos-boho), no al viejo parámetro
+ * `/?category=vestidos`: ese ahora responde con un 301 y enlazar internamente
+ * a un redirect desperdicia el enlace y añade un salto en cada visita. Como
+ * esto se aplica al renderizar y no al guardar, arreglarlo aquí corrige de
+ * golpe todos los artículos ya publicados.
  */
 export function linkifyCategories(body: string): string {
   const used = new Set<Category>();
@@ -70,7 +77,7 @@ export function linkifyCategories(body: string): string {
       for (const [re, cat] of CATEGORY_PATTERNS) {
         if (used.has(cat) || added >= 4) continue;
         if (re.test(out)) {
-          out = out.replace(re, (m) => `[${m}](/?category=${cat})`);
+          out = out.replace(re, (m) => `[${m}](${collectionHref(cat)})`);
           used.add(cat);
           added++;
         }
@@ -95,6 +102,25 @@ export async function getRelatedArticles(
   const sameCat = rows.filter((r) => r.category === category);
   const others = rows.filter((r) => r.category !== category);
   return [...sameCat, ...others].slice(0, limit);
+}
+
+/**
+ * Artículos publicados de una categoría, para enlazar desde su colección.
+ *
+ * Cierra el circuito que pedía el plan: la colección manda tráfico al
+ * artículo y el artículo devuelve a la colección y a las fichas. Sin esto la
+ * revista queda como un silo al que solo se llega desde su propio índice.
+ */
+export async function getArticlesForCategory(
+  category: Category,
+  limit = 3
+): Promise<Article[]> {
+  return db
+    .select()
+    .from(articles)
+    .where(and(eq(articles.published, true), eq(articles.category, category)))
+    .orderBy(desc(articles.createdAt))
+    .limit(limit);
 }
 
 export interface ContentSummary {

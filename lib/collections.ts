@@ -27,6 +27,14 @@ export interface Collection {
   description: string;
   /** Entradilla editorial, un párrafo por elemento. */
   intro: string[];
+  /**
+   * Colecciones que se combinan de forma natural con esta.
+   *
+   * No es decoración: da a Google una ruta entre categorías y al visitante el
+   * siguiente paso obvio. Se eligen por criterio de estilismo (con qué se
+   * lleva), no por similitud de nombre.
+   */
+  related: string[];
 }
 
 export const COLLECTIONS: Collection[] = [
@@ -43,6 +51,7 @@ export const COLLECTIONS: Collection[] = [
       "Los detalles que suelen definirlo son el crochet, los bordados, el ganchillo en el canesú, las mangas abullonadas y los estampados florales o étnicos. El blanco roto, el tostado y los tonos tierra forman la base cromática habitual.",
       "Para una boda o un evento de día funcionan los largos en tonos claros; para diario, los midi con sandalia plana. Si dudas con la talla, revisa la tabla de medidas del vendedor antes de comprar: en las prendas de corte holgado la referencia europea varía mucho.",
     ],
+    related: ["kimonos-boho", "calzado-boho", "joyeria-boho"],
   },
   {
     slug: "blusas-boho",
@@ -57,6 +66,7 @@ export const COLLECTIONS: Collection[] = [
       "Sus señas de identidad son las mangas anchas o abullonadas, los escotes con cordón, el bordado artesanal y las transparencias suaves. El crochet aparece con frecuencia en hombros y puños.",
       "Un criterio de combinación sencillo: si la blusa lleva mucho volumen arriba, equilibra abajo con una prenda más recta. Y al revés — con falda amplia, mejor un top más ceñido.",
     ],
+    related: ["faldas-boho", "pantalones-boho", "joyeria-boho"],
   },
   {
     slug: "faldas-boho",
@@ -71,6 +81,7 @@ export const COLLECTIONS: Collection[] = [
       "Los volantes escalonados, el estampado floral, el tie-dye y los bordados en el bajo son recursos habituales. En verano abundan los tejidos ligeros; en entretiempo, se llevan con capas por encima.",
       "Combina bien con un top sencillo y sandalia plana. Si buscas alargar la figura, elige la falda y el calzado en tonos próximos.",
     ],
+    related: ["blusas-boho", "calzado-boho", "bolsos-boho"],
   },
   {
     slug: "pantalones-boho",
@@ -85,6 +96,7 @@ export const COLLECTIONS: Collection[] = [
       "Los cortes más frecuentes son el palazzo, el culotte y el pantalón de pinzas suelto. Los estampados étnicos y los lisos en tonos tierra conviven sin problema.",
       "Al ser prendas anchas, el patrón suele ir holgado de serie: mide un pantalón que ya tengas y compáralo con la tabla del vendedor antes de decidir la talla.",
     ],
+    related: ["blusas-boho", "kimonos-boho", "calzado-boho"],
   },
   {
     slug: "kimonos-boho",
@@ -99,6 +111,7 @@ export const COLLECTIONS: Collection[] = [
       "Los flecos en el bajo, los bordados en la espalda, el encaje y los estampados de inspiración étnica son sus rasgos más reconocibles. Los hay cortos, a la cadera, y largos hasta el tobillo.",
       "Funciona sobre un vestido liso, como salida de playa o sobre vaquero y camiseta para dar carácter a un conjunto básico. Al ir siempre abierto, la talla es mucho menos crítica que en otras prendas.",
     ],
+    related: ["vestidos-boho", "bolsos-boho", "accesorios-boho"],
   },
   {
     slug: "bolsos-boho",
@@ -113,6 +126,7 @@ export const COLLECTIONS: Collection[] = [
       "El capazo de rafia es el clásico de verano; la bandolera con flecos, la opción de festival; y el bolso de crochet, el que mejor acompaña a un vestido largo.",
       "Antes de comprar conviene mirar las medidas que indique el vendedor: en las fotos de producto la escala engaña con facilidad, y un capazo puede resultar bastante más pequeño de lo que aparenta.",
     ],
+    related: ["vestidos-boho", "calzado-boho", "accesorios-boho"],
   },
   {
     slug: "calzado-boho",
@@ -127,6 +141,7 @@ export const COLLECTIONS: Collection[] = [
       "Las sandalias de tiras y las alpargatas cubren el verano; el botín campero, con o sin flecos, es el que sostiene el look en entretiempo y en festivales.",
       "El tallaje es el punto donde más varía este tipo de calzado. Mide tu pie en centímetros y compáralo con la tabla concreta del vendedor, no con tu talla habitual.",
     ],
+    related: ["vestidos-boho", "faldas-boho", "bolsos-boho"],
   },
   {
     slug: "joyeria-boho",
@@ -141,6 +156,7 @@ export const COLLECTIONS: Collection[] = [
       "Predominan los tonos dorados envejecidos y plateados mate, las piedras naturales, los hilos trenzados y los motivos étnicos. Los pendientes tienden a ser grandes: aros, flecos o formas geométricas.",
       "Si el conjunto ya lleva estampado o mucho volumen, baja la cantidad de joyería. Y si tienes la piel sensible, revisa el material que declare el vendedor antes de comprar piezas que vayan pegadas a la piel.",
     ],
+    related: ["blusas-boho", "vestidos-boho", "accesorios-boho"],
   },
   {
     slug: "accesorios-boho",
@@ -155,6 +171,7 @@ export const COLLECTIONS: Collection[] = [
       "Entre los más habituales están los sombreros de fibra natural, las diademas y cintas para el pelo, los pañuelos estampados y los cinturones con hebilla trabajada.",
       "Conviene elegir uno como protagonista y dejar el resto en segundo plano: si el sombrero manda, mejor bajar el volumen de la joyería.",
     ],
+    related: ["joyeria-boho", "bolsos-boho", "kimonos-boho"],
   },
 ];
 

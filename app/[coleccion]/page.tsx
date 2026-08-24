@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { COLLECTIONS, getCollectionBySlug } from "@/lib/collections";
+import {
+  COLLECTIONS,
+  getCollectionBySlug,
+} from "@/lib/collections";
+import { getArticlesForCategory } from "@/lib/content";
 import { getStoreProducts, parseStoreFilters } from "@/lib/products";
 import { SITE_URL } from "@/lib/site";
 import { CategoryIcon } from "../components/category-icon";
@@ -80,7 +84,15 @@ export default async function CollectionPage({ params, searchParams }: Props) {
     ...parseStoreFilters(raw),
     category: collection.category,
   };
-  const { items, total, page, totalPages } = await getStoreProducts(filters);
+  const [{ items, total, page, totalPages }, articles] = await Promise.all([
+    getStoreProducts(filters),
+    getArticlesForCategory(collection.category, 3),
+  ]);
+
+  // Colecciones que combinan con esta, resueltas desde su slug.
+  const related = collection.related
+    .map((slug) => COLLECTIONS.find((c) => c.slug === slug))
+    .filter((c): c is (typeof COLLECTIONS)[number] => c !== undefined);
 
   const breadcrumbLd = {
     "@context": "https://schema.org",
@@ -148,6 +160,36 @@ export default async function CollectionPage({ params, searchParams }: Props) {
         heading={collection.heading}
         categoryInPath
       />
+
+      {articles.length > 0 && (
+        <section className="collection-reading">
+          <h2>Sobre {collection.name.toLowerCase()} en la Revista</h2>
+          <ul>
+            {articles.map((article) => (
+              <li key={article.slug}>
+                <Link href={`/revista/${article.slug}`}>{article.title}</Link>
+                {article.excerpt && (
+                  <p className="muted">{article.excerpt.slice(0, 130)}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {related.length > 0 && (
+        <section className="collection-related">
+          <h2>Combina {collection.name.toLowerCase()} con</h2>
+          <nav className="collections" aria-label="Colecciones relacionadas">
+            {related.map((c) => (
+              <Link key={c.slug} href={`/${c.slug}`}>
+                <CategoryIcon name={c.category} />
+                {c.name}
+              </Link>
+            ))}
+          </nav>
+        </section>
+      )}
     </>
   );
 }

@@ -10,6 +10,7 @@ import {
 import { renderMarkdown } from "@/lib/markdown";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { SIZES, responsive } from "@/lib/images";
+import { getCollectionByCategory } from "@/lib/collections";
 
 // Un articulo publicado no cambia salvo edicion: se regenera cada hora.
 export const revalidate = 3600;
@@ -59,6 +60,8 @@ export default async function ArticlePage({ params }: Props) {
   // Auto-enlazado interno de categorías dentro del cuerpo (SEO).
   const bodyHtml = renderMarkdown(linkifyCategories(article.body));
 
+  const collection = getCollectionByCategory(article.category);
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -81,7 +84,13 @@ export default async function ArticlePage({ params }: Props) {
       <nav className="breadcrumb" aria-label="Migas de pan">
         <Link href="/revista">La revista</Link>
         <span aria-hidden>/</span>
-        <span>{article.category}</span>
+        {/* La categoria era texto muerto; ahora devuelve a su coleccion, que
+            es lo que el lector querra ver despues de leer el articulo. */}
+        {collection ? (
+          <Link href={`/${collection.slug}`}>{collection.name}</Link>
+        ) : (
+          <span>{article.category}</span>
+        )}
       </nav>
 
       <article className="article">
