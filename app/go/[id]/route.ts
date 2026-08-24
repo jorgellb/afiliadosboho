@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getProductById, recordClick } from "@/lib/products";
+import { clickSource, isBotRequest } from "@/lib/bots";
 
 /**
  * Añade un sub-ID de afiliado al enlace de salida para atribuir la venta a la
@@ -37,9 +38,16 @@ export async function GET(
 
   // Fuente del clic: ?src=ficha|look|quiz|home|chat… (para atribución interna).
   const src = new URL(request.url).searchParams.get("src")?.slice(0, 40) || "directo";
+
+  // Los rastreadores se redirigen igual —no se les bloquea— pero su clic se
+  // anota aparte y NO suma al contador del producto, que debe reflejar
+  // interés real de compra. Antes de esto, el panel mezclaba ambos y era
+  // imposible saber si el tráfico convertía mal o si no era gente.
+  const bot = isBotRequest(request.headers.get("user-agent"));
+
   // El registro no debe bloquear ni romper la redirección.
   try {
-    await recordClick(id, src);
+    await recordClick(id, clickSource(src, bot), { countTowardsProduct: !bot });
   } catch (error) {
     console.error("Error registrando clic:", error);
   }

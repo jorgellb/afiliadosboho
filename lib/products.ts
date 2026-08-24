@@ -11,6 +11,7 @@ import {
   subscribers,
 } from "@/lib/db/schema";
 import { bumpCacheVersion, cacheGet, cacheSet } from "@/lib/cache";
+import { sql as raw } from "@/lib/db/pool";
 import {
   indexProduct,
   removeProduct,
@@ -349,11 +350,26 @@ export async function incrementClicks(id: string): Promise<void> {
 }
 
 /** Registra un clic de afiliado con su fuente (ficha, look, quiz, home…). */
-export async function recordClick(id: string, source: string): Promise<void> {
-  await Promise.all([
-    incrementClicks(id),
+/**
+ * Registra un clic de salida.
+ *
+ * `countTowardsProduct` en false para los bots: el evento se guarda (con su
+ * etiqueta `bot:`) pero `products.clicks` NO se incrementa, así que ese
+ * contador —el que ordena los relacionados y se enseña en el panel— refleja
+ * solo interés humano. De paso se ahorra un UPDATE por cada visita de
+ * rastreador, que no era poco: eran la mayoría del tráfico a /go.
+ */
+export async function recordClick(
+  id: string,
+  source: string,
+  options: { countTowardsProduct?: boolean } = {}
+): Promise<void> {
+  const { countTowardsProduct = true } = options;
+  const writes: Promise<unknown>[] = [
     db.insert(clickEvents).values({ productId: id, source: source.slice(0, 40) }),
-  ]);
+  ];
+  if (countTowardsProduct) writes.push(incrementClicks(id));
+  await Promise.all(writes);
 }
 
 // Piezas que combinan con cada categoría, en orden de preferencia editorial.
@@ -487,6 +503,37 @@ export async function getAdminStats() {
   const [{ value: subscribersCount }] = await db
     .select({ value: count() })
     .from(subscribers);
+
+  // Reparto humanos / bots.
+  //
+  // La frontera se calcula sola: es el PRIMER clic marcado como bot, es decir
+  // el momento en que empezó a haber detección. Todo lo anterior queda como
+  // "sin clasificar" y no se suma a humanos — mezclarlo daría una cifra
+  // falsamente buena, que es justo el problema que este cambio venía a
+  // resolver. Mientras no haya ningún bot detectado, todo es histórico.
+  const [clickSplit] = await raw<{
+    humans: number;
+    bots: number;
+    unclassified: number;
+  }>`
+    WITH inicio AS (
+      SELECT min(created_at) AS desde FROM click_events WHERE source LIKE 'bot:%'
+    )
+    SELECT
+      count(*) FILTER (
+        WHERE source NOT LIKE 'bot:%'
+          AND (SELECT desde FROM inicio) IS NOT NULL
+          AND created_at >= (SELECT desde FROM inicio)
+      )::int AS humans,
+      count(*) FILTER (WHERE source LIKE 'bot:%')::int AS bots,
+      count(*) FILTER (
+        WHERE source NOT LIKE 'bot:%'
+          AND ((SELECT desde FROM inicio) IS NULL
+               OR created_at < (SELECT desde FROM inicio))
+      )::int AS unclassified
+    FROM click_events
+  `;
+
   const recent = await db
     .select()
     .from(products)
@@ -498,6 +545,7 @@ export async function getAdminStats() {
     unavailableCount,
     missingSeoCount,
     subscribersCount,
+    clickSplit,
     recent,
   };
 }

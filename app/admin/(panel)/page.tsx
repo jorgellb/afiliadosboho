@@ -9,8 +9,14 @@ import { RetiredButton } from "./retired-button";
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
-  const { totals, unavailableCount, missingSeoCount, subscribersCount, recent } =
-    await getAdminStats();
+  const {
+    totals,
+    unavailableCount,
+    missingSeoCount,
+    subscribersCount,
+    clickSplit,
+    recent,
+  } = await getAdminStats();
 
   return (
     <>
@@ -20,7 +26,13 @@ export default async function AdminDashboardPage() {
           <strong>{totals.total}</strong> productos
         </div>
         <div className="stat">
-          <strong>{totals.clicks}</strong> clics de afiliado
+          <strong>{clickSplit.humans}</strong> clics humanos
+        </div>
+        <div
+          className="stat"
+          title="Rastreadores automaticos: se redirigen igual, pero no cuentan como interes de compra"
+        >
+          <strong>{clickSplit.bots}</strong> clics de bots
         </div>
         <div className="stat">
           <strong>{unavailableCount}</strong> sin stock
@@ -32,6 +44,14 @@ export default async function AdminDashboardPage() {
           <strong>{subscribersCount}</strong> suscriptores
         </div>
       </div>
+
+      {clickSplit.unclassified > 0 && (
+        <p className="muted">
+          Hay {clickSplit.unclassified} clics anteriores a la deteccion de bots
+          que no se pueden clasificar: mezclan personas y rastreadores, asi que
+          no se suman a ninguna de las dos cifras.
+        </p>
+      )}
 
       <div className="admin-card">
         <h2>Acciones del agente</h2>
