@@ -11,6 +11,11 @@ import {
   subscribers,
 } from "@/lib/db/schema";
 import { bumpCacheVersion, cacheGet, cacheSet } from "@/lib/cache";
+import {
+  indexProduct,
+  removeProduct,
+  searchProducts,
+} from "@/lib/search/products";
 import type { NormalizedProduct } from "@/lib/providers";
 
 export const PAGE_SIZE = 24;
@@ -69,6 +74,39 @@ function storeConditions(filters: StoreFilters) {
   return and(...conditions);
 }
 
+/**
+ * Convierte los IDs que devuelve el buscador en productos completos.
+ *
+ * Los datos se leen SIEMPRE de Postgres, que es la fuente de verdad: si el
+ * índice va unos minutos desfasado, el orden puede ser algo peor, pero el
+ * precio y la disponibilidad que ve el usuario son los buenos. Además se
+ * descartan los IDs que ya no existan en la base, para que un índice sucio
+ * no produzca huecos ni enlaces rotos.
+ */
+async function hydrateHits(
+  ids: string[],
+  total: number,
+  page: number
+): Promise<StoreResult> {
+  if (ids.length === 0) {
+    return { items: [], total, page, totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+  }
+  const rows = await db.select().from(products).where(inArray(products.id, ids));
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  // Se respeta el orden de relevancia que dio el buscador, que se pierde al
+  // consultar por inArray.
+  const items = ids
+    .map((id) => byId.get(id))
+    .filter((row): row is Product => row !== undefined);
+
+  return {
+    items,
+    total,
+    page,
+    totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+  };
+}
+
 /** Listado público con caché cache-aside (TTL 10 min, versión global). */
 export async function getStoreProducts(filters: StoreFilters): Promise<StoreResult> {
   const page = filters.page ?? 1;
@@ -83,6 +121,28 @@ export async function getStoreProducts(filters: StoreFilters): Promise<StoreResu
 
   const cached = await cacheGet<StoreResult>(cacheKey);
   if (cached) return cached;
+
+  // Con término de búsqueda se intenta OpenSearch: entiende raíces
+  // ("vestido" encuentra "vestidos"), ignora acentos, tolera erratas y ordena
+  // por relevancia, cosas que el ILIKE sobre el título no puede hacer.
+  // Si no está configurado o no responde, devuelve null y seguimos con SQL:
+  // el buscador nunca debe tumbar la tienda.
+  if (filters.q) {
+    const hits = await searchProducts({
+      q: filters.q,
+      category: filters.category,
+      min: filters.min,
+      max: filters.max,
+      sort: filters.sort,
+      from: (page - 1) * PAGE_SIZE,
+      size: PAGE_SIZE,
+    });
+    if (hits) {
+      const result = await hydrateHits(hits.ids, hits.total, page);
+      await cacheSet(cacheKey, result);
+      return result;
+    }
+  }
 
   const where = storeConditions(filters);
   const orderBy =
@@ -223,6 +283,9 @@ export async function upsertProduct(
     })
     .returning();
   await bumpCacheVersion();
+  // El indice se sincroniza en segundo plano: si OpenSearch no responde, el
+  // alta del producto no debe fallar por ello.
+  if (row) await indexProduct(row);
   return row;
 }
 
@@ -265,6 +328,7 @@ export async function updateProduct(
     .where(eq(products.id, id))
     .returning();
   await bumpCacheVersion();
+  if (row) await indexProduct(row);
   return row;
 }
 
@@ -273,6 +337,7 @@ export async function deleteProduct(id: string): Promise<boolean> {
     id: products.id,
   });
   await bumpCacheVersion();
+  if (rows.length) await removeProduct(id);
   return rows.length > 0;
 }
 
