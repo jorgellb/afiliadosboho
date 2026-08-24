@@ -2855,6 +2855,19 @@ button.danger:hover:not(:disabled) {
   letter-spacing: 0.06em;
 }
 
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1.1rem 0 0.2rem;
+}
+
+.admin-pagination button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .btn-danger {
   background: #a4262c;
   color: #fff;

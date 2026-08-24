@@ -22,6 +22,8 @@ interface Candidate {
 
 interface Report {
   checked: number;
+  totalActive: number;
+  hasMore: boolean;
   retired: Candidate[];
   newlyMissing: Candidate[];
   recovered: number;
@@ -50,8 +52,12 @@ export function RetiredButton() {
         setReport(data);
         setIsError(data.errors?.length > 0);
         setMessage(
-          `Comprobadas ${data.checked} piezas · ${data.retired.length} retiradas · ` +
-            `${data.newlyMissing.length} marcadas por primera vez · ${data.recovered} recuperadas` +
+          `Comprobadas ${data.checked} de ${data.totalActive} piezas · ` +
+            `${data.retired.length} retiradas · ${data.newlyMissing.length} marcadas ` +
+            `por primera vez · ${data.recovered} recuperadas` +
+            (data.hasMore
+              ? " · quedan piezas por revisar: vuelve a pulsar para continuar"
+              : "") +
             (data.errors?.length ? ` · errores: ${data.errors.join(" | ")}` : "")
         );
         router.refresh();

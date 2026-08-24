@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, asc, count, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { products, type Product } from "@/lib/db/schema";
 import { getProvider } from "@/lib/providers";
@@ -27,6 +27,16 @@ import { sql as raw } from "@/lib/db/pool";
 
 const BATCH = 20;
 
+/**
+ * Cuántas piezas se revisan por pasada.
+ *
+ * Medido: 202 piezas = 11 llamadas a la API = 13 s. La función tiene 60 s,
+ * así que revisar un catálogo de 5000 de una vez (250 llamadas, ~295 s) se
+ * quedaría siempre a medias y sin avisar. Con 400 por pasada se tarda ~26 s
+ * y quedan márgenes; el botón se pulsa varias veces, o lo recorre el cron.
+ */
+const LOTE_POR_PASADA = 400;
+
 export interface RetiredCandidate {
   id: string;
   title: string;
@@ -37,8 +47,12 @@ export interface RetiredCandidate {
 }
 
 export interface RetiredReport {
-  /** Piezas comprobadas contra la API. */
+  /** Piezas comprobadas contra la API en ESTA pasada. */
   checked: number;
+  /** Piezas activas en total, para saber cuánto queda por recorrer. */
+  totalActive: number;
+  /** True si el catálogo es mayor que una pasada y quedan piezas. */
+  hasMore: boolean;
   /** Ausentes ahora y ya marcadas antes: se pueden borrar. */
   retired: RetiredCandidate[];
   /** Ausentes por primera vez: se marcan, se borran en la próxima revisión. */
@@ -63,15 +77,26 @@ function toCandidate(product: Product): RetiredCandidate {
  * Comprueba el catálogo contra la API del proveedor. No borra nada: solo
  * clasifica y actualiza el estado de disponibilidad.
  */
-export async function reviewRetired(limit = 400): Promise<RetiredReport> {
+export async function reviewRetired(limit = LOTE_POR_PASADA): Promise<RetiredReport> {
+  // Se empieza por las MENOS comprobadas recientemente, igual que hace el
+  // cron de precios. Así, pasadas sucesivas recorren el catálogo entero sin
+  // repetir trabajo, y ninguna se pasa del límite de la función.
   const catalog = await db
     .select()
     .from(products)
     .where(eq(products.isActive, true))
+    .orderBy(asc(products.lastCheckedAt))
     .limit(limit);
+
+  const [{ value: totalActivos }] = await db
+    .select({ value: count() })
+    .from(products)
+    .where(eq(products.isActive, true));
 
   const report: RetiredReport = {
     checked: 0,
+    totalActive: totalActivos,
+    hasMore: totalActivos > catalog.length,
     retired: [],
     newlyMissing: [],
     recovered: 0,
@@ -111,6 +136,23 @@ export async function reviewRetired(limit = 400): Promise<RetiredReport> {
 
       report.checked += batch.length;
 
+      // Marca TODO el lote como comprobado, cambie o no su estado.
+      //
+      // Es lo que hace avanzar la paginación: la consulta ordena por
+      // `lastCheckedAt`, así que si solo se actualizaran las piezas que
+      // cambian, las que están bien conservarían su fecha antigua y cada
+      // pasada volvería a revisar exactamente las mismas. El recorrido del
+      // catálogo no progresaría nunca.
+      await db
+        .update(products)
+        .set({ lastCheckedAt: new Date() })
+        .where(
+          inArray(
+            products.id,
+            batch.map((p) => p.id)
+          )
+        );
+
       for (const product of batch) {
         const fresh = alive.get(product.sourceProductId);
 
@@ -121,7 +163,7 @@ export async function reviewRetired(limit = 400): Promise<RetiredReport> {
           if (!product.available && fresh.available) {
             await db
               .update(products)
-              .set({ available: true, lastCheckedAt: new Date() })
+              .set({ available: true })
               .where(eq(products.id, product.id));
             report.recovered++;
           }
@@ -132,7 +174,7 @@ export async function reviewRetired(limit = 400): Promise<RetiredReport> {
           // Primera ausencia: se marca, no se propone borrar todavía.
           await db
             .update(products)
-            .set({ available: false, lastCheckedAt: new Date() })
+            .set({ available: false })
             .where(eq(products.id, product.id));
           report.newlyMissing.push(toCandidate(product));
         } else {

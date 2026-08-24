@@ -36,6 +36,9 @@ export interface AdminProduct {
 
 type EstadoFilter = "todos" | "visibles" | "ocultos" | "sin-stock" | "sin-ficha";
 
+/** Filas por página en el listado del panel. */
+const ROWS_PER_PAGE = 100;
+
 export function ProductsTable({ products }: { products: AdminProduct[] }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -44,6 +47,7 @@ export function ProductsTable({ products }: { products: AdminProduct[] }) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [estado, setEstado] = useState<EstadoFilter>("todos");
+  const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -58,6 +62,26 @@ export function ProductsTable({ products }: { products: AdminProduct[] }) {
       return true;
     });
   }, [products, search, category, estado]);
+
+  // Paginación en cliente. El listado pintaba TODAS las filas: con 202
+  // productos se notaba poco, pero a 5000 son 5000 filas de DOM y la página
+  // se vuelve inmanejable. Los filtros siguen operando sobre el catálogo
+  // entero; lo que se acota es lo que se dibuja.
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ROWS_PER_PAGE));
+  const current = Math.min(page, totalPages);
+  const visible = filtered.slice(
+    (current - 1) * ROWS_PER_PAGE,
+    current * ROWS_PER_PAGE
+  );
+
+  // Al cambiar de filtro se vuelve a la primera página: quedarse en la 7 de
+  // un listado que ahora tiene 2 daría una tabla vacía sin explicación.
+  const filterKey = `${search}|${category}|${estado}`;
+  const [lastFilterKey, setLastFilterKey] = useState(filterKey);
+  if (lastFilterKey !== filterKey) {
+    setLastFilterKey(filterKey);
+    setPage(1);
+  }
 
   async function action(
     id: string,
@@ -115,6 +139,7 @@ export function ProductsTable({ products }: { products: AdminProduct[] }) {
         </select>
         <span className="muted">
           {filtered.length} de {products.length}
+          {totalPages > 1 && ` · página ${current} de ${totalPages}`}
         </span>
       </div>
 
@@ -139,7 +164,7 @@ export function ProductsTable({ products }: { products: AdminProduct[] }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p) => {
+              {visible.map((p) => {
                 const busy = busyId === p.id;
                 return (
                   <tr key={p.id}>
@@ -205,6 +230,28 @@ export function ProductsTable({ products }: { products: AdminProduct[] }) {
               })}
             </tbody>
           </table>
+
+          {totalPages > 1 && (
+            <nav className="admin-pagination" aria-label="Paginación del listado">
+              <button
+                type="button"
+                onClick={() => setPage(current - 1)}
+                disabled={current === 1}
+              >
+                ← Anterior
+              </button>
+              <span className="muted">
+                {current} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage(current + 1)}
+                disabled={current === totalPages}
+              >
+                Siguiente →
+              </button>
+            </nav>
+          )}
         </div>
       )}
     </div>

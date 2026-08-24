@@ -74,18 +74,32 @@ export async function ensureIndex(): Promise<boolean> {
   return created?.acknowledged === true;
 }
 
-/** Reindexa el catálogo completo. Devuelve cuántos documentos se enviaron. */
+/**
+ * Documentos por peticion _bulk.
+ *
+ * Medido: 202 productos ocupan 196 KB de NDJSON, asi que un catalogo de 5000
+ * en una sola peticion serian ~5 MB y bastante mas de los 30 s de timeout.
+ * Con 500 por lote cada peticion ronda el medio mega y termina holgada.
+ */
+const BULK_SIZE = 500;
+
+/** Reindexa el catálogo completo. Devuelve cuántos documentos se indexaron. */
 export async function reindexAll(products: Product[]): Promise<number> {
   if (!isSearchConfigured()) return 0;
   await ensureIndex();
 
-  const lines: string[] = [];
-  for (const product of products) {
-    lines.push(JSON.stringify({ index: { _index: PRODUCTS_INDEX, _id: product.id } }));
-    lines.push(JSON.stringify(toDoc(product)));
+  let indexed = 0;
+  for (let i = 0; i < products.length; i += BULK_SIZE) {
+    const chunk = products.slice(i, i + BULK_SIZE);
+    const lines: string[] = [];
+    for (const product of chunk) {
+      lines.push(JSON.stringify({ index: { _index: PRODUCTS_INDEX, _id: product.id } }));
+      lines.push(JSON.stringify(toDoc(product)));
+    }
+    // Un lote fallido no aborta el resto: se informa por el total devuelto.
+    if (await bulkRequest(lines)) indexed += chunk.length;
   }
-  const ok = await bulkRequest(lines);
-  return ok ? products.length : 0;
+  return indexed;
 }
 
 /** Indexa o actualiza un producto suelto. Silencioso si falla. */
