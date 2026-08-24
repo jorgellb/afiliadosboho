@@ -7,6 +7,7 @@ import {
   getRelatedProducts,
 } from "@/lib/products";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { getCollectionByCategory } from "@/lib/collections";
 import { DiscountBadge, SocialRow } from "../../components/social-proof";
 
 export const dynamic = "force-dynamic";
@@ -69,6 +70,34 @@ export default async function ProductPage({ params }: Props) {
     0
   );
 
+  const collection = getCollectionByCategory(product.category);
+
+  // BreadcrumbList: la ruta Inicio > Colección > Producto que Google muestra
+  // en la SERP en lugar de la URL cruda. Refleja las migas visibles.
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "La tienda", item: `${SITE_URL}/` },
+      ...(collection
+        ? [
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: collection.name,
+              item: `${SITE_URL}/${collection.slug}`,
+            },
+          ]
+        : []),
+      {
+        "@type": "ListItem",
+        position: collection ? 3 : 2,
+        name: displayTitle,
+        item: `${SITE_URL}/producto/${product.slug ?? product.id}`,
+      },
+    ],
+  };
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -77,18 +106,12 @@ export default async function ProductPage({ params }: Props) {
     description:
       product.metaDescription ?? product.seoDescription ?? product.title,
     category: product.category,
-    ...(product.rating && Number(product.rating) > 0
-      ? {
-          aggregateRating: {
-            "@type": "AggregateRating",
-            ratingValue: (Number(product.rating) / 20).toFixed(1),
-            bestRating: "5",
-            ratingCount: product.ordersCount && product.ordersCount > 0
-              ? product.ordersCount
-              : 1,
-          },
-        }
-      : {}),
+    // SIN aggregateRating a propósito. El dato del proveedor es un
+    // PORCENTAJE de valoraciones positivas, y la página lo muestra como tal
+    // ("★ 95%"); convertirlo a una nota sobre 5 haría que los datos
+    // estructurados no coincidieran con el contenido visible. Además
+    // ordersCount son VENTAS, no reseñas, y no hay sistema de reseñas propio.
+    // Marcarlo sería exponerse a una acción manual por reseñas falsas.
     offers: {
       "@type": "Offer",
       url: `${SITE_URL}/producto/${product.slug ?? product.id}`,
@@ -104,13 +127,21 @@ export default async function ProductPage({ params }: Props) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify([jsonLd, breadcrumbLd]),
+        }}
       />
 
       <nav className="breadcrumb" aria-label="Migas de pan">
         <Link href="/">La tienda</Link>
         <span aria-hidden>/</span>
-        <Link href={`/?category=${product.category}`}>{product.category}</Link>
+        {collection ? (
+          <Link href={`/${collection.slug}`}>{collection.name}</Link>
+        ) : (
+          <Link href={`/?category=${product.category}`}>{product.category}</Link>
+        )}
+        <span aria-hidden>/</span>
+        <span aria-current="page">{displayTitle}</span>
       </nav>
 
       <article className="ficha">
@@ -154,6 +185,14 @@ export default async function ProductPage({ params }: Props) {
             </div>
           )}
 
+          {/* El aviso va ANTES del primer CTA monetizado: quien pulsa
+              "Comprar" ya ha leído que el enlace es de afiliado. */}
+          <p className="muted ficha-disclosure">
+            Este enlace es de afiliado: si compras a través de él podemos
+            recibir una comisión, sin coste adicional para ti. La compra se
+            completa en la web de nuestro socio comercial.
+          </p>
+
           <div className="ficha-actions">
             <a
               className="btn-primary"
@@ -178,11 +217,6 @@ export default async function ProductPage({ params }: Props) {
               <dd>{product.available ? "En stock" : "Agotado"}</dd>
             </div>
           </dl>
-
-          <p className="muted ficha-disclosure">
-            La compra se completa en la web de nuestro socio comercial y
-            puede generarnos una comisión sin coste extra para ti.
-          </p>
         </div>
       </article>
 

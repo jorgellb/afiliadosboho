@@ -1,28 +1,41 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { CATEGORIES } from "@/lib/db/schema";
-import { getStoreProducts, parseStoreFilters, StoreFilters } from "@/lib/products";
+import { COLLECTIONS } from "@/lib/collections";
+import { getStoreProducts, parseStoreFilters } from "@/lib/products";
 import { CategoryIcon } from "./components/category-icon";
-import { DiscountBadge, SocialRow } from "./components/social-proof";
+import { StoreListing } from "./components/store-listing";
 
 export const dynamic = "force-dynamic";
 
-function pageHref(filters: StoreFilters, page: number): string {
-  const params = new URLSearchParams();
-  if (filters.q) params.set("q", filters.q);
-  if (filters.category) params.set("category", filters.category);
-  if (filters.min !== undefined) params.set("min", String(filters.min));
-  if (filters.max !== undefined) params.set("max", String(filters.max));
-  if (filters.sort && filters.sort !== "recientes") params.set("sort", filters.sort);
-  if (page > 1) params.set("page", String(page));
-  const qs = params.toString();
-  return qs ? `/?${qs}` : "/";
+/** Un filtro activo convierte el listado en una vista que no debe indexarse. */
+function hasFilters(sp: { [key: string]: string | string[] | undefined }) {
+  const one = (v: string | string[] | undefined) =>
+    Array.isArray(v) ? v[0] : v;
+  return Boolean(
+    one(sp.q) ||
+      one(sp.category) ||
+      one(sp.min) ||
+      one(sp.max) ||
+      (one(sp.sort) && one(sp.sort) !== "recientes")
+  );
 }
 
-function formatPrice(price: string, currency: string): string {
-  return new Intl.NumberFormat("es", {
-    style: "currency",
-    currency,
-  }).format(Number(price));
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}): Promise<Metadata> {
+  const sp = await searchParams;
+  const page = Number(Array.isArray(sp.page) ? sp.page[0] : sp.page) || 1;
+  const filtered = hasFilters(sp);
+
+  // Búsquedas y filtros comparten plantilla con la portada pero no aportan
+  // nada al índice: se marcan noindex,follow para que Google siga los enlaces
+  // a fichas y colecciones sin quedarse las combinaciones.
+  return {
+    alternates: { canonical: page > 1 ? `/?page=${page}` : "/" },
+    ...(filtered ? { robots: { index: false, follow: true } } : {}),
+  };
 }
 
 export default async function StorePage({
@@ -40,6 +53,12 @@ export default async function StorePage({
     filters.max === undefined &&
     page === 1;
   const collage = items.slice(0, 2);
+
+  const heading = filters.category
+    ? `Colección · ${filters.category}`
+    : filters.q
+      ? `Resultados · “${filters.q}”`
+      : "La tienda";
 
   return (
     <>
@@ -65,17 +84,29 @@ export default async function StorePage({
               </Link>
             </div>
             <p className="hero-meta">
-              {total} piezas · {CATEGORIES.length - 1} colecciones · curaduría
+              {total} piezas · {COLLECTIONS.length} colecciones · curaduría
               con inteligencia artificial
             </p>
           </div>
           {collage.length > 0 && (
             <figure className="hero-collage">
+              {/* La primera imagen es candidata a LCP: sin lazy y con prioridad
+                  de descarga, para no retrasar el mayor elemento visible. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="col-a" src={collage[0].imageUrl} alt={collage[0].title} />
+              <img
+                className="col-a"
+                src={collage[0].imageUrl}
+                alt={collage[0].title}
+                fetchPriority="high"
+              />
               {collage[1] && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img className="col-b" src={collage[1].imageUrl} alt={collage[1].title} />
+                <img
+                  className="col-b"
+                  src={collage[1].imageUrl}
+                  alt={collage[1].title}
+                  loading="lazy"
+                />
               )}
               <figcaption>boho</figcaption>
               <span className="hero-stamp" aria-hidden>
@@ -100,197 +131,27 @@ export default async function StorePage({
       )}
 
       <nav className="collections" aria-label="Colecciones">
-        {CATEGORIES.filter((c) => c !== "otros").map((c) => (
+        {COLLECTIONS.map((c) => (
           <Link
-            key={c}
-            href={`/?category=${c}`}
-            className={filters.category === c ? "active" : undefined}
+            key={c.slug}
+            href={`/${c.slug}`}
+            className={filters.category === c.category ? "active" : undefined}
           >
-            <CategoryIcon name={c} />
-            {c}
+            <CategoryIcon name={c.category} />
+            {c.category}
           </Link>
         ))}
       </nav>
 
-      <section id="tienda">
-        <div className="shop-head">
-          <h2>
-            {filters.category
-              ? `Colección · ${filters.category}`
-              : filters.q
-                ? `Resultados · “${filters.q}”`
-                : "La tienda"}
-          </h2>
-          <span className="shop-count">
-            {total} pieza{total === 1 ? "" : "s"}
-          </span>
-        </div>
-
-        <div className="toolbar">
-          <form className="toolbar-form" method="get" action="/">
-            {filters.category && (
-              <input type="hidden" name="category" value={filters.category} />
-            )}
-            {filters.sort && filters.sort !== "recientes" && (
-              <input type="hidden" name="sort" value={filters.sort} />
-            )}
-            <span className="toolbar-glyph" aria-hidden>
-              ⌕
-            </span>
-            <input
-              className="toolbar-search"
-              type="search"
-              name="q"
-              defaultValue={filters.q ?? ""}
-              placeholder="Busca una pieza: vestido, kimono, crochet…"
-              aria-label="Buscar en la tienda"
-            />
-            <span className="toolbar-price">
-              <input
-                type="number"
-                name="min"
-                min="0"
-                step="0.01"
-                placeholder="€ mín"
-                aria-label="Precio mínimo"
-                defaultValue={filters.min ?? ""}
-              />
-              <span aria-hidden>—</span>
-              <input
-                type="number"
-                name="max"
-                min="0"
-                step="0.01"
-                placeholder="€ máx"
-                aria-label="Precio máximo"
-                defaultValue={filters.max ?? ""}
-              />
-            </span>
-            <button type="submit">Aplicar</button>
-          </form>
-          <nav className="toolbar-sort" aria-label="Ordenar">
-            {(
-              [
-                ["recientes", "Recientes"],
-                ["precio_asc", "Precio ↑"],
-                ["precio_desc", "Precio ↓"],
-              ] as const
-            ).map(([value, label]) => (
-              <Link
-                key={value}
-                href={pageHref({ ...filters, sort: value }, 1)}
-                className={
-                  (filters.sort ?? "recientes") === value ? "active" : undefined
-                }
-              >
-                {label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-
-        {(filters.q ||
-          filters.category ||
-          filters.min !== undefined ||
-          filters.max !== undefined) && (
-          <div className="active-filters">
-            {filters.q && (
-              <Link href={pageHref({ ...filters, q: undefined }, 1)}>
-                “{filters.q}” ✕
-              </Link>
-            )}
-            {filters.category && (
-              <Link href={pageHref({ ...filters, category: undefined }, 1)}>
-                {filters.category} ✕
-              </Link>
-            )}
-            {filters.min !== undefined && (
-              <Link href={pageHref({ ...filters, min: undefined }, 1)}>
-                desde {filters.min} ✕
-              </Link>
-            )}
-            {filters.max !== undefined && (
-              <Link href={pageHref({ ...filters, max: undefined }, 1)}>
-                hasta {filters.max} ✕
-              </Link>
-            )}
-            <Link className="clear-all" href="/">
-              Limpiar todo
-            </Link>
-          </div>
-        )}
-
-        {items.length === 0 ? (
-          <div className="empty-state">
-            <p>
-              No hay piezas que coincidan con tu búsqueda…
-              <br />
-              prueba con otra palabra o pide ayuda a la estilista.
-            </p>
-            <Link className="btn-ghost" href="/asistente">
-              Preguntar a la estilista ✨
-            </Link>
-          </div>
-        ) : (
-          <ul className="product-grid">
-            {items.map((product) => {
-              const fichaHref = `/producto/${product.slug ?? product.id}`;
-              const displayTitle = product.seoTitle ?? product.title;
-              return (
-                <li key={product.id} className="product-card">
-                  <Link
-                    className="card-media"
-                    href={fichaHref}
-                    aria-label={displayTitle}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={product.imageUrl} alt={displayTitle} loading="lazy" />
-                    <DiscountBadge discountPct={product.discountPct} />
-                  </Link>
-                  <h3>
-                    <Link href={fichaHref}>{displayTitle}</Link>
-                  </h3>
-                  <SocialRow
-                    rating={product.rating}
-                    ordersCount={product.ordersCount}
-                    discountPct={product.discountPct}
-                  />
-                  <p className="price">
-                    {formatPrice(product.price, product.currency)}
-                    {product.originalPrice && (
-                      <span className="original">
-                        {formatPrice(product.originalPrice, product.currency)}
-                      </span>
-                    )}
-                  </p>
-                  <Link className="buy-link" href={fichaHref}>
-                    Ver la pieza
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-
-        {totalPages > 1 && (
-          <nav className="pagination" aria-label="Paginación">
-            {page > 1 && <Link href={pageHref(filters, page - 1)}>← Anterior</Link>}
-            {Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
-              .map((p, idx, arr) => (
-                <span key={p} style={{ display: "contents" }}>
-                  {idx > 0 && arr[idx - 1] !== p - 1 && <span>…</span>}
-                  {p === page ? (
-                    <span className="current">{p}</span>
-                  ) : (
-                    <Link href={pageHref(filters, p)}>{p}</Link>
-                  )}
-                </span>
-              ))}
-            {page < totalPages && <Link href={pageHref(filters, page + 1)}>Siguiente →</Link>}
-          </nav>
-        )}
-      </section>
+      <StoreListing
+        basePath="/"
+        filters={filters}
+        items={items}
+        total={total}
+        page={page}
+        totalPages={totalPages}
+        heading={heading}
+      />
     </>
   );
 }

@@ -4,6 +4,7 @@ import { Fraunces, Mulish } from "next/font/google";
 import { ChatWidget } from "./components/chat-widget";
 import { CookieBanner, CookieSettingsLink } from "./components/cookie-banner";
 import { MobileNav } from "./components/mobile-nav";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 // Fraunces: serif suave y cálida (boho amable) para títulos.
@@ -21,6 +22,8 @@ const mulish = Mulish({
 });
 
 export const metadata: Metadata = {
+  // Base para resolver canónicas y Open Graph relativos a URL absoluta.
+  metadataBase: new URL(SITE_URL),
   title: "Boho Chic — Tienda de moda boho",
   description:
     "Buscador y tienda de moda boho chic: vestidos, kimonos, faldas y accesorios seleccionados a los mejores precios.",
@@ -68,10 +71,10 @@ export default function RootLayout({
             <div>
               <p className="footer-title">Colecciones</p>
               <p>
-                <Link href="/?category=vestidos">Vestidos</Link> ·{" "}
-                <Link href="/?category=kimonos">Kimonos</Link> ·{" "}
-                <Link href="/?category=faldas">Faldas</Link> ·{" "}
-                <Link href="/?category=joyeria">Joyería</Link>
+                <Link href="/vestidos-boho">Vestidos boho</Link> ·{" "}
+                <Link href="/kimonos-boho">Kimonos boho</Link> ·{" "}
+                <Link href="/faldas-boho">Faldas boho</Link> ·{" "}
+                <Link href="/joyeria-boho">Joyería boho</Link>
               </p>
             </div>
             <div>

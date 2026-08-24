@@ -5,6 +5,9 @@ import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { CategoryIcon } from "./category-icon";
+// collections.ts solo importa un TIPO del schema, y los import type se borran
+// al compilar: Drizzle no entra en el bundle del cliente.
+import { COLLECTIONS } from "@/lib/collections";
 
 /**
  * Navegación móvil: botón hamburguesa en el cabecero y cajón lateral.
@@ -23,18 +26,6 @@ const LINKS = [
   { href: "/asistente", label: "Estilista", hint: "Consejo a medida" },
 ];
 
-// Lista propia (no se importa el schema para no arrastrar Drizzle al cliente).
-const COLLECTIONS = [
-  "vestidos",
-  "kimonos",
-  "faldas",
-  "blusas",
-  "pantalones",
-  "bolsos",
-  "calzado",
-  "joyeria",
-  "accesorios",
-];
 
 /** Suscripción vacía: el "montado" no cambia una vez hidratado. */
 const subscribeNothing = () => () => {};
@@ -125,10 +116,10 @@ export function MobileNav() {
 
         <p className="nav-drawer-title">Colecciones</p>
         <nav className="nav-drawer-cats" aria-label="Colecciones">
-          {COLLECTIONS.map((category) => (
-            <Link key={category} href={`/?category=${category}`}>
-              <CategoryIcon name={category} />
-              {category}
+          {COLLECTIONS.map((c) => (
+            <Link key={c.slug} href={`/${c.slug}`}>
+              <CategoryIcon name={c.category} />
+              {c.category}
             </Link>
           ))}
         </nav>
