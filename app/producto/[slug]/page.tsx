@@ -10,7 +10,21 @@ import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { getCollectionByCategory } from "@/lib/collections";
 import { DiscountBadge, SocialRow } from "../../components/social-proof";
 
-export const dynamic = "force-dynamic";
+// La ficha se regenera cada hora en vez de renderizarse en cada visita.
+// Es la plantilla mas rastreada del sitio (196 URLs) y su contenido solo
+// cambia con el cron diario de precios o con una edicion del panel, que
+// ademas invalida esta ruta al vuelo con revalidatePath.
+export const revalidate = 3600;
+
+/**
+ * Lista vacia a proposito: no se prerenderiza ninguna ficha en el build (serian
+ * 196 paginas x 3 consultas en cada despliegue), pero su mera presencia hace
+ * que Next trate la ruta como generada estaticamente bajo demanda. Sin esto,
+ * `revalidate` no se aplica y cada visita se renderiza entera.
+ */
+export async function generateStaticParams() {
+  return [];
+}
 
 function formatPrice(price: string, currency: string): string {
   return new Intl.NumberFormat("es", { style: "currency", currency }).format(

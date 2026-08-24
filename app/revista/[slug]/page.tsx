@@ -10,7 +10,13 @@ import {
 import { renderMarkdown } from "@/lib/markdown";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
+// Un articulo publicado no cambia salvo edicion: se regenera cada hora.
+export const revalidate = 3600;
+
+/** Igual que las fichas: ISR bajo demanda, sin coste en el build. */
+export async function generateStaticParams() {
+  return [];
+}
 
 function formatPrice(price: string, currency: string): string {
   return new Intl.NumberFormat("es", { style: "currency", currency }).format(

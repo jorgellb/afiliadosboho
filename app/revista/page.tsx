@@ -3,7 +3,9 @@ import Link from "next/link";
 import { getPublishedArticles } from "@/lib/content";
 import { SITE_NAME } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
+// El indice de la revista cambia cuando se publica un articulo: una hora
+// de cache es de sobra y evita renderizarlo en cada visita.
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: `Revista boho — guías y tendencias de moda | ${SITE_NAME}`,

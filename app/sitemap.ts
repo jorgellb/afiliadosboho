@@ -4,7 +4,9 @@ import { getProductsForSitemap } from "@/lib/products";
 import { getPublishedArticles } from "@/lib/content";
 import { SITE_URL } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
+// El sitemap recorre 214 URLs contra la base de datos. Regenerarlo en
+// cada peticion de Googlebot era puro gasto de CPU: se cachea una hora.
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [products, articles] = await Promise.all([

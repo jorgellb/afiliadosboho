@@ -7,7 +7,9 @@ import { buildFeedXml } from "@/lib/feed";
  * catálogo actual, así que no hay nada que «regenerar» cuando se añaden
  * productos. Google lo relee según su propio calendario (a diario por defecto).
  */
-export const dynamic = "force-dynamic";
+// Merchant Center descarga el feed segun su propio calendario (a diario).
+// Se regenera como mucho cada hora en vez de en cada descarga.
+export const revalidate = 3600;
 export const maxDuration = 60;
 
 export async function GET() {
