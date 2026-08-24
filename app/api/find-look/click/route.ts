@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { neon } from "@neondatabase/serverless";
+import { sql } from "@/lib/db/pool";
 import { z } from "zod";
 
 const bodySchema = z.object({
@@ -14,7 +14,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
   try {
-    const sql = neon(process.env.DATABASE_URL!);
     await sql`
       UPDATE look_searches
       SET clicked_products = array_append(

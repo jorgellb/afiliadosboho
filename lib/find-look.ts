@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless";
+import { sql } from "@/lib/db/pool";
 import {
   callNvidiaJson,
   embedText,
@@ -12,10 +12,13 @@ import {
  * fuera de Drizzle y se consultan por SQL crudo (operadores <=> de pgvector).
  */
 
+/**
+ * Estas tablas viven fuera de Drizzle (operadores <=> de pgvector), asi que se
+ * consultan con el template etiquetado de lib/db/pool, que conserva la misma
+ * forma que tenia el driver de Neon: devuelve filas, no objeto resultado.
+ */
 function raw() {
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL no está definida");
-  return neon(url);
+  return sql;
 }
 
 /** Serializa un vector a literal pgvector: [0.1,0.2,...] */

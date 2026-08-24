@@ -8,10 +8,31 @@
  * Reanudable e idempotente: solo procesa lo que falta.
  */
 import { config } from "dotenv";
-import { neon } from "@neondatabase/serverless";
+import pg from "pg";
 
 config({ path: [".env.local", ".env"] });
-const sql = neon(process.env.DATABASE_URL);
+
+const ca = process.env.DATABASE_CA_CERT?.trim();
+const client = new pg.Client({
+  connectionString: process.env.DATABASE_URL,
+  ssl: ca
+    ? { ca: ca.replace(/\\n/g, "\n"), rejectUnauthorized: true }
+    : { rejectUnauthorized: false },
+});
+await client.connect();
+
+/**
+ * Template etiquetado con la misma forma que tenía el driver de Neon: las
+ * interpolaciones pasan a parámetros posicionales y devuelve las filas.
+ */
+const sql = async (strings, ...values) => {
+  const text = strings.reduce(
+    (acc, part, i) => acc + part + (i < values.length ? `$${i + 1}` : ""),
+    ""
+  );
+  const result = await client.query(text, values);
+  return result.rows;
+};
 const KEY = process.env.NVIDIA_API_KEY;
 const EMBEDDING_MODEL = "nvidia/nv-embedqa-e5-v5";
 const VISION_MODELS = [
@@ -90,5 +111,6 @@ async function main() {
     await sleep(1500); // ritmo para no exceder ~40 req/min
   }
   console.log(`✓ Indexados ${ok} de ${pending.length}.`);
+  await client.end();
 }
-main().catch((e) => { console.error(e); process.exit(1); });
+main().catch(async (e) => { console.error(e); await client.end().catch(() => {}); process.exit(1); });

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { neon } from "@neondatabase/serverless";
+import { sql } from "@/lib/db/pool";
 import { decomposeLook, matchItem, Match } from "@/lib/find-look";
 
 // Margen para el peor caso (si el modelo rápido se cuelga y cae al lento ~27s).
@@ -11,9 +11,7 @@ const SESSION_COOKIE = "look_session";
 const PER_SESSION_HOUR = 15;
 const MAX_DAILY = Number(process.env.MAX_DAILY_SEARCHES || 300);
 
-function sql() {
-  return neon(process.env.DATABASE_URL!);
-}
+
 
 export async function POST(request: Request) {
   // 1. Imagen (multipart), comprimida en cliente.
@@ -43,7 +41,7 @@ export async function POST(request: Request) {
   const match = cookie.match(new RegExp(`${SESSION_COOKIE}=([^;]+)`));
   const sessionId = match?.[1] ?? randomUUID();
 
-  const db = sql();
+  const db = sql;
   // 3. Rate limits (por conteo en BD, sin dependencias de pago).
   const [{ daily }] = (await db`
     SELECT count(*)::int AS daily FROM look_searches WHERE created_at::date = current_date

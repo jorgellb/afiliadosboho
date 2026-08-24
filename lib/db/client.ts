@@ -1,13 +1,11 @@
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { getPool } from "./pool";
 import * as schema from "./schema";
 
 type Database = ReturnType<typeof createDb>;
 
 function createDb() {
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL no está definida");
-  return drizzle(neon(url), { schema });
+  return drizzle(getPool(), { schema });
 }
 
 let cached: Database | undefined;
