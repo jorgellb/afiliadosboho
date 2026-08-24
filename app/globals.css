@@ -2778,6 +2778,62 @@ button.danger:hover:not(:disabled) {
   color: #3f6b3a;
 }
 
+/* --- Revision de piezas retiradas --- */
+
+.retired-list {
+  margin: 0.8rem 0 0;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid #a4262c33;
+  background: #a4262c0a;
+  border-radius: var(--radius-sm);
+  max-width: 46rem;
+}
+
+.retired-warn {
+  margin: 0 0 0.7rem;
+  font-size: 0.88rem;
+  color: #a4262c;
+}
+
+.retired-list ul {
+  margin: 0 0 0.9rem;
+  padding-left: 1.1rem;
+  font-size: 0.86rem;
+  line-height: 1.7;
+  /* Un lote grande no debe empujar el resto del panel fuera de pantalla. */
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.retired-cat {
+  display: inline-block;
+  min-width: 6.5rem;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.btn-danger {
+  background: #a4262c;
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.1rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #8a1f24;
+}
+
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 form.stacked {
   display: flex;
   flex-direction: column;

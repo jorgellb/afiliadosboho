@@ -4,6 +4,7 @@ import { RefreshButton } from "./refresh-button";
 import { CurateButton } from "./curate-button";
 import { SeoButton } from "./seo-button";
 import { ContentButton } from "./content-button";
+import { RetiredButton } from "./retired-button";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,7 @@ export default async function AdminDashboardPage() {
         <SeoButton />
         <ContentButton />
         <RefreshButton />
+        <RetiredButton />
       </div>
 
       <div className="admin-card">
