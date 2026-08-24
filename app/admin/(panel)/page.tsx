@@ -5,6 +5,7 @@ import { CurateButton } from "./curate-button";
 import { SeoButton } from "./seo-button";
 import { ContentButton } from "./content-button";
 import { RetiredButton } from "./retired-button";
+import { PipelineButton } from "./pipeline-button";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,7 @@ export default async function AdminDashboardPage() {
           El agente trabaja sobre AliExpress: añade productos por categoría,
           refresca precios y redacta las fichas SEO pendientes.
         </p>
+        <PipelineButton />
         <CurateButton />
         <SeoButton />
         <ContentButton />

@@ -9,6 +9,7 @@ import {
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { getCollectionByCategory } from "@/lib/collections";
 import { SIZES, responsive } from "@/lib/images";
+import { linkCategories } from "@/lib/internal-links";
 import { DiscountBadge, SocialRow } from "../../components/social-proof";
 
 // La ficha se regenera cada hora en vez de renderizarse en cada visita.
@@ -196,8 +197,25 @@ export default async function ProductPage({ params }: Props) {
 
           {product.seoDescription ? (
             <div className="ficha-copy">
-              {product.seoDescription.split(/\n+/).map((p, i) => (
-                <p key={i}>{p}</p>
+              {/* Las menciones de otras categorías pasan a ser enlaces a su
+                  colección: la descripción dice "combínalo con unas sandalias"
+                  y eso era texto muerto. Se salta la categoría propia, que ya
+                  está en la miga de pan. */}
+              {product.seoDescription.split(/\n+/).map((paragraph, i) => (
+                <p key={i}>
+                  {linkCategories(paragraph, {
+                    skip: product.category,
+                    max: 2,
+                  }).map((seg, j) =>
+                    seg.href ? (
+                      <Link key={j} href={seg.href}>
+                        {seg.text}
+                      </Link>
+                    ) : (
+                      <span key={j}>{seg.text}</span>
+                    )
+                  )}
+                </p>
               ))}
             </div>
           ) : (

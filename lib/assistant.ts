@@ -3,23 +3,14 @@ import { db } from "@/lib/db/client";
 import { CATEGORIES, Category, products } from "@/lib/db/schema";
 import { ProviderError, getProvider } from "@/lib/providers";
 import { upsertProduct } from "@/lib/products";
+import { chat, type LlmMessage } from "@/lib/llm";
 
 /**
- * Asistente de moda con tool calling sobre la API de NVIDIA (compatible con
- * OpenAI). El modelo puede buscar en el catálogo local y recomendar productos;
- * la UI muestra las tarjetas con el enlace de afiliado (/go/[id]).
+ * Asistente de moda con tool calling. El modelo puede buscar en el catálogo
+ * local y recomendar productos; la UI muestra las tarjetas con el enlace de
+ * afiliado (/go/[id]). El proveedor lo decide lib/llm.ts.
  */
 
-const BASE_URL =
-  process.env.NVIDIA_API_BASE_URL || "https://integrate.api.nvidia.com/v1";
-const MODEL = process.env.NVIDIA_MODEL || "z-ai/glm-5.2";
-// Si el modelo principal está caído/saturado se intenta con estos, en orden.
-const FALLBACK_MODELS = (
-  process.env.NVIDIA_FALLBACK_MODELS || "meta/llama-3.1-70b-instruct"
-)
-  .split(",")
-  .map((m) => m.trim())
-  .filter(Boolean);
 const MAX_TOOL_ROUNDS = 3;
 const MAX_PRODUCTS = 8;
 
@@ -356,88 +347,23 @@ async function buildOutfit(args: {
   return { pieces, total, currency: pieces[0]?.currency ?? "EUR" };
 }
 
+/**
+ * Punto único de entrada al modelo para todo el proyecto.
+ *
+ * La elección de proveedor y la cadena de reserva viven en lib/llm.ts, que
+ * intenta primero los modelos GRATUITOS de OpenRouter y cae a NVIDIA si
+ * ninguno responde. Aquí solo se adapta la forma del mensaje, que es la misma
+ * en ambos por ser dialecto OpenAI.
+ */
 export async function callModel(
   messages: ApiMessage[],
   opts: { tools?: object[]; maxTokens?: number } = {}
 ): Promise<ApiMessage> {
-  const models = [MODEL, ...FALLBACK_MODELS.filter((m) => m !== MODEL)];
-  let lastError: unknown;
-  for (const model of models) {
-    try {
-      return await callModelOnce(model, messages, opts);
-    } catch (error) {
-      lastError = error;
-      // Un fallo de credenciales afecta a todos los modelos: no insistir.
-      if (error instanceof Error && /HTTP (401|403)/.test(error.message)) {
-        throw error;
-      }
-      console.warn(`Modelo ${model} no disponible, probando siguiente:`,
-        error instanceof Error ? error.message : error);
-    }
-  }
-  throw lastError;
+  const message = await chat(messages as LlmMessage[], opts);
+  return message as ApiMessage;
 }
 
-async function callModelOnce(
-  model: string,
-  messages: ApiMessage[],
-  opts: { tools?: object[]; maxTokens?: number } = {}
-): Promise<ApiMessage> {
-  const apiKey = process.env.NVIDIA_API_KEY;
-  if (!apiKey) {
-    throw new Error("Falta la variable de entorno NVIDIA_API_KEY");
-  }
-  let response: Response;
-  try {
-    response = await fetch(`${BASE_URL}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        ...(opts.tools ? { tools: opts.tools, tool_choice: "auto" } : {}),
-        temperature: 1,
-        top_p: 1,
-        // GLM es un modelo razonador: el límite debe cubrir razonamiento + respuesta.
-        max_tokens: opts.maxTokens ?? 8192,
-        stream: false,
-      }),
-      cache: "no-store",
-      // El endpoint gratuito de NVIDIA encola peticiones cuando está saturado;
-      // cortamos antes de que Vercel mate la función con un 504 sin mensaje.
-      signal: AbortSignal.timeout(45_000),
-    });
-  } catch (error) {
-    if (error instanceof Error && error.name === "TimeoutError") {
-      throw new Error(
-        "API de NVIDIA: saturada en este momento, inténtalo de nuevo en unos minutos"
-      );
-    }
-    throw error;
-  }
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    throw new Error(
-      `API de NVIDIA: HTTP ${response.status} ${detail.slice(0, 200)}`
-    );
-  }
-  const data = (await response.json()) as {
-    choices?: Array<{ message?: ApiMessage }>;
-  };
-  const message = data.choices?.[0]?.message;
-  if (!message) throw new Error("API de NVIDIA: respuesta sin contenido");
-  // Los modelos razonadores pueden incrustar su razonamiento en el contenido;
-  // se elimina para que el usuario solo vea la respuesta final.
-  if (typeof message.content === "string") {
-    message.content = message.content
-      .replace(/<think>[\s\S]*?<\/think>/g, "")
-      .trim();
-  }
-  return message;
-}
+
 
 /** Sugerencias de seguimiento según el contexto (sin coste de IA). */
 function followUps(hasProducts: boolean, builtOutfit: boolean): string[] {

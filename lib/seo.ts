@@ -255,12 +255,21 @@ export async function getSeoHealth(): Promise<SeoHealth> {
 }
 
 /** Genera fichas para los productos que aún no tienen (lotes pequeños). */
+/**
+ * Redacta las fichas que faltan.
+ *
+ * El tope sube de 10 a 40: con curación DIARIA de las nueve categorías entran
+ * ~27 piezas al día, así que un límite de 10 dejaría la deuda creciendo para
+ * siempre y la mayoría del catálogo sin ficha. 40 cubre un día entero con
+ * holgura. El freno real no es este número sino el 429 del proveedor de IA,
+ * que corta el bucle en cuanto aparece.
+ */
 export async function generateMissingSeo(limit: number = 6): Promise<SeoSummary> {
   const pending = await db
     .select()
     .from(products)
     .where(isNull(products.seoTitle))
-    .limit(Math.min(Math.max(limit, 1), 10));
+    .limit(Math.min(Math.max(limit, 1), 40));
 
   const summary: SeoSummary = { generated: 0, errors: [] };
   for (const product of pending) {
