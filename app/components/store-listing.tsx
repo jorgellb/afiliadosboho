@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { StoreFilters } from "@/lib/products";
 import type { Product } from "@/lib/db/schema";
 import { DiscountBadge, SocialRow } from "./social-proof";
+import { SIZES, responsive } from "@/lib/images";
 
 /**
  * Listado de tienda: buscador, filtros, rejilla y paginación.
@@ -196,7 +197,14 @@ export function StoreListing({
                   aria-label={displayTitle}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={product.imageUrl} alt={displayTitle} loading="lazy" />
+                  <img
+                    {...responsive(product.imageUrl, SIZES.grid)}
+                    alt={displayTitle}
+                    loading="lazy"
+                    decoding="async"
+                    width={640}
+                    height={640}
+                  />
                   <DiscountBadge discountPct={product.discountPct} />
                 </Link>
                 <h3>

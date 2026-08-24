@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { QUESTIONS } from "@/lib/quiz";
+import { SIZES, responsive } from "@/lib/images";
 
 interface FeedProduct {
   id: string;
@@ -155,7 +156,14 @@ export function QuizClient() {
                 <li key={p.id} className="product-card">
                   <Link className="card-media" href={href} aria-label={p.title}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.imageUrl} alt={p.title} loading="lazy" />
+                    <img
+                  {...responsive(p.imageUrl, SIZES.grid)}
+                  alt={p.title}
+                  loading="lazy"
+                  decoding="async"
+                  width={480}
+                  height={480}
+                />
                     {p.discountPct && p.discountPct >= 5 && (
                       <span className="discount-badge">−{p.discountPct}%</span>
                     )}

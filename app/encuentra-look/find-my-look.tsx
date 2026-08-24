@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { SIZES, responsive } from "@/lib/images";
 
 /**
  * "Encuentra este Look" (Módulo D). Sube/pega/arrastra una imagen, se comprime
@@ -269,7 +270,14 @@ export function FindMyLook() {
                           onClick={() => trackClick(result.searchId, m.productId)}
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={m.imageUrl} alt={m.title} loading="lazy" />
+                          <img
+                          {...responsive(m.imageUrl, SIZES.grid)}
+                          alt={m.title}
+                          loading="lazy"
+                          decoding="async"
+                          width={480}
+                          height={480}
+                        />
                           <span className="fl-similarity">
                             {Math.round(m.similarity * 100)}% parecido
                           </span>

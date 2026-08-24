@@ -3,6 +3,7 @@ import Link from "next/link";
 import { COLLECTIONS } from "@/lib/collections";
 import { getStoreProducts, parseStoreFilters } from "@/lib/products";
 import { CategoryIcon } from "./components/category-icon";
+import { SIZES, responsive } from "@/lib/images";
 import { StoreListing } from "./components/store-listing";
 
 export const dynamic = "force-dynamic";
@@ -95,17 +96,23 @@ export default async function StorePage({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 className="col-a"
-                src={collage[0].imageUrl}
+                {...responsive(collage[0].imageUrl, SIZES.hero)}
                 alt={collage[0].title}
                 fetchPriority="high"
+                decoding="async"
+                width={800}
+                height={800}
               />
               {collage[1] && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   className="col-b"
-                  src={collage[1].imageUrl}
+                  {...responsive(collage[1].imageUrl, SIZES.hero)}
                   alt={collage[1].title}
                   loading="lazy"
+                  decoding="async"
+                  width={640}
+                  height={640}
                 />
               )}
               <figcaption>boho</figcaption>

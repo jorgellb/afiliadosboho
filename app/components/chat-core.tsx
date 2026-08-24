@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { SIZES, responsive } from "@/lib/images";
 
 interface AssistantProduct {
   id: string;
@@ -128,7 +129,14 @@ export function ChatCore({ compact = false }: { compact?: boolean }) {
                   <li key={p.id} className="chat-product-row">
                     <Link href={`/producto/${p.id}`} className="chat-product-media">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={p.imageUrl} alt={p.title} loading="lazy" />
+                      <img
+                        {...responsive(p.imageUrl, SIZES.thumb)}
+                        alt={p.title}
+                        loading="lazy"
+                        decoding="async"
+                        width={220}
+                        height={220}
+                      />
                       {p.discountPct && p.discountPct >= 5 && (
                         <span className="chat-disc">−{p.discountPct}%</span>
                       )}

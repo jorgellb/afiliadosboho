@@ -8,6 +8,7 @@ import {
 } from "@/lib/products";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { getCollectionByCategory } from "@/lib/collections";
+import { SIZES, responsive } from "@/lib/images";
 import { DiscountBadge, SocialRow } from "../../components/social-proof";
 
 // La ficha se regenera cada hora en vez de renderizarse en cada visita.
@@ -160,8 +161,17 @@ export default async function ProductPage({ params }: Props) {
 
       <article className="ficha">
         <figure className="ficha-media">
+          {/* Imagen principal: es el LCP de la ficha, asi que ni lazy ni
+              prioridad baja. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={product.imageUrl} alt={displayTitle} />
+          <img
+            {...responsive(product.imageUrl, SIZES.ficha)}
+            alt={displayTitle}
+            fetchPriority="high"
+            decoding="async"
+            width={640}
+            height={640}
+          />
           {discountPct !== null && discountPct >= 5 && (
             <span className="ficha-discount">−{discountPct}%</span>
           )}
@@ -248,7 +258,14 @@ export default async function ProductPage({ params }: Props) {
           <ol className="look-grid">
             <li className="look-item look-hero">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={product.imageUrl} alt={displayTitle} />
+              <img
+                {...responsive(product.imageUrl, SIZES.thumb)}
+                alt={displayTitle}
+                loading="lazy"
+                decoding="async"
+                width={480}
+                height={480}
+              />
               <div>
                 <span className="look-role">La pieza</span>
                 <p className="look-title">{displayTitle}</p>
@@ -259,7 +276,14 @@ export default async function ProductPage({ params }: Props) {
               <li key={p.id} className="look-item">
                 <Link href={`/producto/${p.slug ?? p.id}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.imageUrl} alt={p.seoTitle ?? p.title} loading="lazy" />
+                  <img
+                    {...responsive(p.imageUrl, SIZES.grid)}
+                    alt={p.seoTitle ?? p.title}
+                    loading="lazy"
+                    decoding="async"
+                    width={640}
+                    height={640}
+                  />
                 </Link>
                 <div>
                   <span className="look-role">{p.category}</span>
@@ -296,7 +320,14 @@ export default async function ProductPage({ params }: Props) {
                   aria-label={p.seoTitle ?? p.title}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.imageUrl} alt={p.seoTitle ?? p.title} loading="lazy" />
+                  <img
+                    {...responsive(p.imageUrl, SIZES.grid)}
+                    alt={p.seoTitle ?? p.title}
+                    loading="lazy"
+                    decoding="async"
+                    width={640}
+                    height={640}
+                  />
                   <DiscountBadge discountPct={p.discountPct} />
                 </Link>
                 <h3>{p.seoTitle ?? p.title}</h3>

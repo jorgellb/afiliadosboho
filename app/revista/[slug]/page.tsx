@@ -9,6 +9,7 @@ import {
 } from "@/lib/content";
 import { renderMarkdown } from "@/lib/markdown";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { SIZES, responsive } from "@/lib/images";
 
 // Un articulo publicado no cambia salvo edicion: se regenera cada hora.
 export const revalidate = 3600;
@@ -88,7 +89,11 @@ export default async function ArticlePage({ params }: Props) {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             className="article-hero"
-            src={article.heroImageUrl}
+            {...responsive(article.heroImageUrl, SIZES.hero)}
+            fetchPriority="high"
+            decoding="async"
+            width={800}
+            height={800}
             // El alt escrito en el panel manda; si no lo hay, uno descriptivo.
             alt={article.heroImageAlt ?? `${article.title} — moda boho de la tienda Boho Chic`}
           />
@@ -113,9 +118,12 @@ export default async function ArticlePage({ params }: Props) {
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={p.imageUrl}
+                      {...responsive(p.imageUrl, SIZES.thumb)}
                       alt={`${p.seoTitle ?? p.title} — ${p.category} boho`}
                       loading="lazy"
+                      decoding="async"
+                      width={480}
+                      height={480}
                     />
                     {p.discountPct && p.discountPct >= 5 && (
                       <span className="discount-badge">−{p.discountPct}%</span>

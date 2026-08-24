@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getPublishedArticles } from "@/lib/content";
 import { SITE_NAME } from "@/lib/site";
+import { SIZES, responsive } from "@/lib/images";
 
 // El indice de la revista cambia cuando se publica un articulo: una hora
 // de cache es de sobra y evita renderizarlo en cada visita.
@@ -39,7 +40,14 @@ export default async function RevistaPage() {
               {a.heroImageUrl && (
                 <Link className="article-cover" href={`/revista/${a.slug}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={a.heroImageUrl} alt={a.heroImageAlt ?? a.title} loading="lazy" />
+                  <img
+                    {...responsive(a.heroImageUrl, SIZES.grid)}
+                    alt={a.heroImageAlt ?? a.title}
+                    loading="lazy"
+                    decoding="async"
+                    width={640}
+                    height={640}
+                  />
                 </Link>
               )}
               <div className="article-card-body">
