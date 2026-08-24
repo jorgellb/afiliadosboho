@@ -44,8 +44,15 @@ export function parseStoreFilters(params: {
   const one = (v: string | string[] | undefined) =>
     Array.isArray(v) ? v[0] : v;
   const num = (v: string | undefined) => {
+    // El campo VACIO tiene que ser "sin filtro", no cero.
+    //
+    // Number("") devuelve 0, no NaN. Y el formulario envia siempre min= y max=
+    // aunque el usuario no los rellene, asi que toda busqueda hecha desde la
+    // caja acababa filtrando "precio <= 0" y devolviendo cero resultados.
+    // Por URL, sin esos parametros, funcionaba: por eso el fallo sobrevivio.
+    if (v === undefined || v.trim() === "") return undefined;
     const n = Number(v);
-    return v !== undefined && Number.isFinite(n) && n >= 0 ? n : undefined;
+    return Number.isFinite(n) && n >= 0 ? n : undefined;
   };
   const category = one(params.category);
   const sort = one(params.sort);
