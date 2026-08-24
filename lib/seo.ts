@@ -272,17 +272,39 @@ export async function generateMissingSeo(limit: number = 6): Promise<SeoSummary>
     .limit(Math.min(Math.max(limit, 1), 40));
 
   const summary: SeoSummary = { generated: 0, errors: [] };
-  for (const product of pending) {
-    try {
-      await generateSeoForProduct(product);
-      summary.generated++;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "error";
-      summary.errors.push(`${product.title.slice(0, 40)}…: ${message}`);
-      // Con el límite de peticiones alcanzado, insistir solo suma fallos.
-      if (message.includes("429")) break;
-    }
+
+  // EN PARALELO, por tandas. Medido: una ficha tarda ~33 s con el prompt real
+  // (los modelos de razonamiento gastan buena parte pensando). En serie, 30
+  // fichas son 16 minutos, contra un cron que dispone de 300 s: la promesa de
+  // 30 al día era aritméticamente imposible. Con tandas de 4 bajan a ~4 min.
+  //
+  // La concurrencia se mantiene baja a propósito: el cupo gratuito de
+  // OpenRouter ronda las 20 peticiones por minuto, y dispararlas todas de
+  // golpe garantizaría el 429 que se intenta evitar.
+  const CONCURRENCIA = 4;
+
+  for (let i = 0; i < pending.length; i += CONCURRENCIA) {
+    const tanda = pending.slice(i, i + CONCURRENCIA);
+    const resultados = await Promise.allSettled(
+      tanda.map((product) => generateSeoForProduct(product))
+    );
+
+    let limiteAlcanzado = false;
+    resultados.forEach((resultado, j) => {
+      if (resultado.status === "fulfilled") {
+        summary.generated++;
+        return;
+      }
+      const message =
+        resultado.reason instanceof Error ? resultado.reason.message : "error";
+      summary.errors.push(`${tanda[j].title.slice(0, 40)}…: ${message}`);
+      if (message.includes("429")) limiteAlcanzado = true;
+    });
+
+    // Con el límite de peticiones alcanzado, seguir solo suma fallos.
+    if (limiteAlcanzado) break;
   }
+
   if (summary.generated > 0) await bumpCacheVersion();
   return summary;
 }

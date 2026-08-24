@@ -46,7 +46,17 @@ export async function runDailyPipeline(
   options: PipelineOptions = {}
 ): Promise<PipelineSummary> {
   const perCategory = options.perCategory ?? 3;
-  const seoLimit = options.seoLimit ?? 30;
+  // PRESUPUESTO DEL CRON: 300 s en total.
+  //
+  // Medido: una ficha SEO tarda ~33 s y se generan de 4 en 4, o sea ~33 s por
+  // tanda. La curación de las nueve categorías se lleva unos 90 s en llamadas
+  // a AliExpress. Quedan ~200 s, que dan para 5-6 tandas.
+  //
+  // 16 (4 tandas, ~132 s) deja margen para el reindexado y para que un modelo
+  // lento no tumbe la ejecución entera. El día que entren más piezas de las
+  // que se pueden redactar, la deuda la absorbe el cron siguiente: se elige
+  // siempre lo que aún no tiene ficha.
+  const seoLimit = options.seoLimit ?? 16;
 
   const summary: PipelineSummary = {
     catalog: { added: {}, totalAdded: 0, errors: [] },

@@ -46,9 +46,12 @@ interface Provider {
  * los modelos entran y salen de la lista, y uno retirado devuelve 404.
  */
 const DEFAULT_OPENROUTER_MODELS = [
+  // Comprobado: responde en ~1,6 s y devuelve JSON limpio. Es de razonamiento,
+  // pero el razonamiento no se descuenta del presupuesto de contenido, así que
+  // funciona incluso con max_tokens bajos.
+  "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
   "nvidia/nemotron-3-ultra-550b-a55b:free",
   "google/gemma-4-31b-it:free",
-  "nvidia/nemotron-3.5-lightning:free",
 ];
 
 function list(value: string | undefined, fallback: string[]): string[] {
@@ -99,10 +102,13 @@ function providers(): Provider[] {
           ? `${process.env.NVIDIA_MODEL},${process.env.NVIDIA_FALLBACK_MODELS ?? ""}`
           : undefined,
         // Comprobado contra la API: z-ai/glm-5.2 y
-        // mistralai/mistral-small-4-119b-2603 responden ya 410 Gone. Se deja
-        // primero el único que sigue vivo, para no gastar una petición
-        // fallida antes de cada respuesta.
-        ["meta/llama-3.1-70b-instruct"]
+        // mistralai/mistral-small-4-119b-2603 responden ya 410 Gone, así que
+        // no entran. Nemotron nano-omni contesta en ~1,6 s y llama-3.1 queda
+        // de red de seguridad.
+        [
+          "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+          "meta/llama-3.1-70b-instruct",
+        ]
       ),
       extraHeaders: {},
     });
@@ -119,6 +125,12 @@ export function hasLlm(): boolean {
 /** Nombres de los proveedores activos, en orden. */
 export function llmChain(): string[] {
   return providers().map((p) => `${p.name}(${p.models.length})`);
+}
+
+function etiqueta(provider: Provider, model: string): string {
+  // El id ya suele venir con el proveedor dentro ("nvidia/nemotron-..."),
+  // y anteponerlo otra vez producia "nvidia/nvidia/nemotron-..." en los logs.
+  return model.startsWith(`${provider.name}/`) ? model : `${provider.name}/${model}`;
 }
 
 async function callOnce(
@@ -146,11 +158,16 @@ async function callOnce(
         stream: false,
       }),
       cache: "no-store",
-      signal: AbortSignal.timeout(opts.timeoutMs ?? 45_000),
+      // 90 s, no 45: medido, una ficha SEO real tarda ~33 s en ambos modelos
+      // (el de razonamiento genera ~9.600 caracteres de pensamiento antes de
+      // responder). Con 45 s el margen era tan estrecho que cualquier
+      // variación provocaba un timeout... que costaba otros 45 s antes de
+      // probar el siguiente modelo.
+      signal: AbortSignal.timeout(opts.timeoutMs ?? 90_000),
     });
   } catch (error) {
     if (error instanceof Error && error.name === "TimeoutError") {
-      throw new Error(`${provider.name}/${model}: agotado el tiempo de espera`);
+      throw new Error(`${etiqueta(provider, model)}: agotado el tiempo de espera`);
     }
     throw error;
   }
@@ -158,7 +175,7 @@ async function callOnce(
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
     throw new Error(
-      `${provider.name}/${model}: HTTP ${response.status} ${detail.slice(0, 200)}`
+      `${etiqueta(provider, model)}: HTTP ${response.status} ${detail.slice(0, 200)}`
     );
   }
 
@@ -170,12 +187,27 @@ async function callOnce(
   // modelo de destino falla; sin esto se devolvería un mensaje vacío como si
   // fuera válido.
   if (data.error?.message) {
-    throw new Error(`${provider.name}/${model}: ${data.error.message}`);
+    throw new Error(`${etiqueta(provider, model)}: ${data.error.message}`);
   }
   const message = data.choices?.[0]?.message;
   if (!message) {
-    throw new Error(`${provider.name}/${model}: respuesta sin mensaje`);
+    throw new Error(`${etiqueta(provider, model)}: respuesta sin mensaje`);
   }
+
+  // Un contenido vacío se trata como fallo para que la cadena pruebe el
+  // siguiente modelo. Sin esto se devolvía como válido y reventaba mucho más
+  // abajo, en el JSON.parse de quien llamó, con un error que no señalaba al
+  // culpable y sin haber probado ninguna alternativa.
+  //
+  // La excepción son las llamadas con herramientas: ahí el modelo contesta
+  // legítimamente con `tool_calls` y sin texto.
+  const sinTexto = !message.content || message.content.trim().length === 0;
+  const sinHerramientas =
+    !Array.isArray(message.tool_calls) || message.tool_calls.length === 0;
+  if (sinTexto && sinHerramientas) {
+    throw new Error(`${etiqueta(provider, model)}: respuesta vacía`);
+  }
+
   return message;
 }
 
