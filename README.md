@@ -59,17 +59,25 @@ La lógica compartida vive en `lib/`: `db/` (esquema y cliente), `providers/`
 
 ### Trampas de despliegue (leídas en carne propia)
 
-**El autor del commit debe tener acceso al proyecto en Vercel.** El repositorio
-es privado y el plan Hobby no admite colaboradores en repos privados, así que
-Vercel rechaza el despliegue con *"the commit author did not have contributing
-access"* si en el commit aparece cualquier identidad ajena a la cuenta. Eso
-incluye los **coautores**: un trailer `Co-Authored-By` con un correo que no sea
-el tuyo basta para bloquearlo. Los commits deben ir firmados solo como
-`jorgellb@gmail.com`, sin coautores.
+**El email del commit tiene que estar verificado en tu cuenta de GitHub.**
+Vercel rechaza el despliegue con *"the commit email ... could not be matched to
+a GitHub account"*. La causa no es el plan ni los permisos: si GitHub no puede
+atribuir el commit a un usuario, Vercel no tiene a quién comprobarle el acceso.
 
-Para desatascar un despliegue bloqueado no hace falta reescribir el historial:
-basta un commit nuevo y limpio encima, o desplegar por CLI con
-`npx vercel --prod --yes`, que no pasa por esa comprobación.
+`jorgellb@gmail.com` NO está verificado en la cuenta `jorgellb`, así que los
+commits firmados con él quedan huérfanos. La solución robusta es firmar con el
+correo *noreply* que emite el propio GitHub, que siempre casa:
+
+```bash
+git config user.email "25139828+jorgellb@users.noreply.github.com"
+```
+
+La alternativa es añadir y verificar `jorgellb@gmail.com` en GitHub →
+Settings → Emails, si prefieres que el historial lleve tu correo real.
+
+Para desatascar un despliegue ya bloqueado basta un commit nuevo encima con el
+correo correcto: no hace falta reescribir el historial. También sirve desplegar
+por CLI con `npx vercel --prod --yes`, que no pasa por esa comprobación.
 
 **Tras desplegar por `git push`, el CSS puede dar 404.** El HTML nuevo se sirve
 con hashes que no coinciden con los ficheros publicados y la web sale sin
