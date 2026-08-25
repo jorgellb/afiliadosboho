@@ -623,6 +623,146 @@ a {
   padding-right: 2.5rem;
 }
 
+/* ============================================================
+   Motivos hippies (app/components/boho-art.tsx)
+   SVG en linea: heredan color, escalan sin coste y no pesan red.
+   ============================================================ */
+
+.boho-art {
+  /* El trazo se mantiene fino aunque la pieza se agrande. */
+  vector-effect: non-scaling-stroke;
+}
+
+/* --- Separador de seccion --- */
+
+.boho-divider {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  padding: clamp(2rem, 5vw, 3.2rem) 0;
+  color: var(--terracotta);
+}
+
+.boho-divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--line) 18%,
+    var(--line) 82%,
+    transparent
+  );
+}
+
+.boho-divider-motif {
+  width: clamp(30px, 6vw, 44px);
+  height: auto;
+  flex: none;
+  opacity: 0.75;
+  animation: boho-gira 48s linear infinite;
+}
+
+@keyframes boho-gira {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Sol de fondo del hero --- */
+
+.hero {
+  position: relative;
+}
+
+.hero-sun {
+  position: absolute;
+  top: -14%;
+  right: -6%;
+  width: clamp(220px, 34vw, 460px);
+  height: auto;
+  color: var(--terracotta);
+  opacity: 0.13;
+  pointer-events: none;
+  z-index: 0;
+  animation: boho-gira 140s linear infinite;
+}
+
+/* El contenido del hero por encima del sol. */
+.hero > div,
+.hero-collage {
+  position: relative;
+  z-index: 1;
+}
+
+/* --- Arco setentero sobre el collage --- */
+
+.hero-collage .col-a {
+  /* El arco de medio punto es LA forma de los setenta. */
+  border-radius: 50% 50% var(--radius) var(--radius) / 32% 32% var(--radius) var(--radius);
+}
+
+/* --- Motivos sueltos --- */
+
+.boho-motif {
+  width: clamp(26px, 4vw, 38px);
+  height: auto;
+  flex: none;
+  color: var(--sage-deep);
+  opacity: 0.8;
+}
+
+.collection-head {
+  position: relative;
+}
+
+.collection-motif {
+  position: absolute;
+  top: -0.4rem;
+  right: 0;
+  width: clamp(56px, 10vw, 96px);
+  height: auto;
+  color: var(--sage);
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+/* --- Estado vacio: que no sea un parrafo triste y solo --- */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  text-align: center;
+  padding: clamp(2.4rem, 6vw, 4rem) 1rem;
+}
+
+.empty-motif {
+  width: clamp(70px, 14vw, 110px);
+  height: auto;
+  color: var(--terracotta);
+  opacity: 0.4;
+}
+
+/* --- Ondas del pie --- */
+
+.footer-waves {
+  display: block;
+  width: 100%;
+  height: auto;
+  color: var(--line);
+  margin-bottom: -0.4rem;
+}
+
+/* Quien pide menos movimiento no ve girar nada. */
+@media (prefers-reduced-motion: reduce) {
+  .boho-divider-motif,
+  .hero-sun {
+    animation: none;
+  }
+}
+
 /* ---------- Cabecera de coleccion ---------- */
 
 .collection-head {

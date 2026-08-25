@@ -10,6 +10,7 @@ import { getStoreProducts, parseStoreFilters } from "@/lib/products";
 import { SITE_URL } from "@/lib/site";
 import { CategoryIcon } from "../components/category-icon";
 import { StoreListing } from "../components/store-listing";
+import { Divider, Mandala } from "../components/boho-art";
 
 /**
  * Página de colección: /vestidos-boho, /joyeria-boho…
@@ -127,6 +128,7 @@ export default async function CollectionPage({ params, searchParams }: Props) {
       </nav>
 
       <header className="collection-head">
+        <Mandala className="boho-art collection-motif" />
         <p className="hero-kicker">Colección</p>
         <h1>{collection.heading}</h1>
         <div className="collection-intro">
@@ -160,6 +162,8 @@ export default async function CollectionPage({ params, searchParams }: Props) {
         heading={collection.heading}
         categoryInPath
       />
+
+      {(articles.length > 0 || related.length > 0) && <Divider motif="moon" />}
 
       {articles.length > 0 && (
         <section className="collection-reading">

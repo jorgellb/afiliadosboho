@@ -4,6 +4,7 @@ import { Fraunces, Mulish } from "next/font/google";
 import { ChatWidget } from "./components/chat-widget";
 import { CookieBanner, CookieSettingsLink } from "./components/cookie-banner";
 import { MobileNav } from "./components/mobile-nav";
+import { Waves } from "./components/boho-art";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -56,6 +57,8 @@ export default function RootLayout({
           <MobileNav />
         </header>
         <main>{children}</main>
+        {/* Ondas de cierre: separan el pie del contenido sin una linea dura. */}
+        <Waves className="boho-art footer-waves" />
         <footer className="site-footer">
           <p className="footer-wordmark" aria-hidden>
             Boho Chic

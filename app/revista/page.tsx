@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getPublishedArticles } from "@/lib/content";
 import { SITE_NAME } from "@/lib/site";
 import { SIZES, responsive } from "@/lib/images";
+import { Divider } from "@/app/components/boho-art";
 
 // El indice de la revista cambia cuando se publica un articulo: una hora
 // de cache es de sobra y evita renderizarlo en cada visita.
@@ -24,6 +25,7 @@ export default async function RevistaPage() {
           La revista
         </p>
         <h1>Diario boho</h1>
+      <Divider motif="daisy" />
         <p className="muted">
           Guías de estilo, tendencias e ideas para combinar tus piezas favoritas.
         </p>

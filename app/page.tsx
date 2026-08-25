@@ -5,6 +5,7 @@ import { getStoreProducts, parseStoreFilters } from "@/lib/products";
 import { CategoryIcon } from "./components/category-icon";
 import { SIZES, responsive } from "@/lib/images";
 import { StoreListing } from "./components/store-listing";
+import { Divider, SunBurst } from "./components/boho-art";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +66,9 @@ export default async function StorePage({
     <>
       {isPortada && (
         <section className="hero">
+          {/* Sol setentero detras del titular: la pieza que da caracter sin
+              competir con el texto, por eso al 13% de opacidad. */}
+          <SunBurst className="boho-art hero-sun" />
           <div>
             <p className="hero-kicker">La edición de esta temporada</p>
             <h1>
@@ -136,6 +140,8 @@ export default async function StorePage({
           </div>
         </div>
       )}
+
+      {isPortada && <Divider motif="daisy" />}
 
       <nav className="collections" aria-label="Colecciones">
         {COLLECTIONS.map((c) => (

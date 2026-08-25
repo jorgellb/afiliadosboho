@@ -3,6 +3,7 @@ import type { StoreFilters } from "@/lib/products";
 import type { Product } from "@/lib/db/schema";
 import { DiscountBadge, SocialRow } from "./social-proof";
 import { SIZES, responsive } from "@/lib/images";
+import { Mushroom } from "./boho-art";
 
 /**
  * Listado de tienda: buscador, filtros, rejilla y paginación.
@@ -175,6 +176,7 @@ export function StoreListing({
 
       {items.length === 0 ? (
         <div className="empty-state">
+          <Mushroom className="boho-art empty-motif" />
           <p>
             No hay piezas que coincidan con tu búsqueda…
             <br />
