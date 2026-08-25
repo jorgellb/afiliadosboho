@@ -1148,10 +1148,12 @@ button.secondary:hover:not(:disabled) {
 
 .product-grid {
   display: grid;
-  /* min() evita que la columna mínima fuerce scroll en móviles estrechos.
-     La columna sube de 240 a 260: con la imagen cuadrada cabe lo mismo, y el
-     conjunto respira. */
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  /* TRES columnas fijas en escritorio, no auto-fill.
+     Con auto-fill a 260px una pantalla ancha metía cinco o seis tarjetas por
+     fila: cada una quedaba estrecha, y aunque la foto es cuadrada, el bloque
+     de titulo y precio debajo hacia que el conjunto se leyera como alargado.
+     Con tres columnas la imagen se ve grande y la tarjeta queda equilibrada. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   /* Más aire, sobre todo entre filas: el arco necesita espacio alrededor para
      leerse como forma y no como recorte. */
   gap: clamp(2.2rem, 4vw, 3.4rem) clamp(1.2rem, 2.2vw, 2rem);
@@ -4578,12 +4580,13 @@ form.stacked {
     padding-bottom: 0.4rem;
   }
 
-  /* Rejilla de productos: 2 columnas (no una tarjeta gigante por fila) */
+  /* Aqui NO se fijan columnas: por debajo de 620px manda la regla de una sola
+     columna que hay mas abajo, y declararlas aqui solo servia para que dos
+     reglas se contradijeran. Se conserva el hueco, que si aplica. */
   .product-grid,
   .look-grid,
   .fl-matches .product-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem 0.7rem;
+    gap: 1.4rem 0.9rem;
   }
   .product-card h3 {
     font-size: 0.92rem;
@@ -4644,12 +4647,28 @@ form.stacked {
   }
 }
 
-/* --- Móvil estrecho: una columna --- */
-@media (max-width: 380px) {
+/* --- Tablet: dos columnas --- */
+/* Entre 620 y 1000 px, tres columnas dejan la foto por debajo de 200 px.
+   Este bloque va ANTES que el de móvil para que aquel gane en pantallas
+   pequeñas: con la misma especificidad, decide el orden. */
+@media (max-width: 1000px) {
+  .product-grid,
+  .look-grid,
+  .fl-matches .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* --- Móvil: una sola columna --- */
+/* El umbral sube de 380 a 620 px: en un teléfono normal, dos columnas dejaban
+   la foto a unos 150 px y el titulo partido en cuatro lineas. Una columna da
+   a cada pieza el ancho entero de la pantalla. */
+@media (max-width: 620px) {
   .product-grid,
   .look-grid,
   .fl-matches .product-grid {
     grid-template-columns: 1fr;
+    gap: 1.8rem 0;
   }
 }
 
