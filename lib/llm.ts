@@ -33,6 +33,14 @@ export interface LlmOptions {
    * demás en vez de rendirse.
    */
   preferredModel?: string | null;
+  /**
+   * Prueba SOLO `preferredModel`, sin caer a los demás ni a otro proveedor.
+   *
+   * Lo usa el botón de probar del panel: si al probar un modelo la cadena
+   * cayera a otro, el resultado mediría al sustituto y no al candidato, que
+   * es exactamente lo contrario de lo que se quiere averiguar.
+   */
+  onlyPreferred?: boolean;
 }
 
 interface Provider {
@@ -242,30 +250,50 @@ export async function chat(
   messages: LlmMessage[],
   opts: LlmOptions = {}
 ): Promise<LlmMessage> {
-  const chain = providers(opts.preferredModel);
+  let chain = providers(opts.preferredModel);
+
+  if (opts.onlyPreferred && opts.preferredModel) {
+    const solo = chain.find((p) => p.models[0] === opts.preferredModel);
+    chain = solo ? [{ ...solo, models: [opts.preferredModel] }] : [];
+    if (chain.length === 0) {
+      throw new Error(
+        `No hay proveedor configurado para ${opts.preferredModel}`
+      );
+    }
+  }
+
   if (chain.length === 0) {
     throw new Error(
       "No hay ningún proveedor de IA configurado (OPENROUTER_API_KEY o NVIDIA_API_KEY)"
     );
   }
 
-  let lastError: unknown;
+  // Se acumulan TODOS los fallos, no solo el último.
+  //
+  // Devolver únicamente el último error resultaba engañoso: si OpenRouter
+  // rechazaba la credencial y luego NVIDIA se colgaba con un modelo
+  // inexistente, el mensaje solo hablaba del cuelgue de NVIDIA y la causa real
+  // quedaba invisible. Con la cadena entera se ve dónde falló cada eslabón.
+  const fallos: string[] = [];
   for (const provider of chain) {
     for (const model of provider.models) {
       try {
         return await callOnce(provider, model, messages, opts);
       } catch (error) {
-        lastError = error;
         const message = error instanceof Error ? error.message : String(error);
+        fallos.push(message);
+        console.warn(`[llm] ${message.slice(0, 160)}`);
         if (/HTTP (401|403)/.test(message)) {
-          console.warn(`[llm] credencial rechazada en ${provider.name}, se salta el proveedor`);
+          // La credencial es la misma para todos los modelos del proveedor.
+          fallos.push(`${provider.name}: credencial rechazada, se salta el proveedor`);
           break;
         }
-        console.warn(`[llm] ${message.slice(0, 140)}`);
       }
     }
   }
-  throw lastError instanceof Error
-    ? lastError
-    : new Error("Ningún modelo disponible");
+  throw new Error(
+    fallos.length > 0
+      ? `Ningún modelo respondió. Intentos: ${fallos.join(" | ")}`
+      : "Ningún modelo disponible"
+  );
 }

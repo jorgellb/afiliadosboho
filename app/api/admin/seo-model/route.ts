@@ -94,6 +94,8 @@ Producto:
     const message = await chat([{ role: "user", content: prompt }], {
       maxTokens: 4096,
       preferredModel: parsed.data.model,
+      // Sin caer a otros: se mide ESTE modelo, no a su sustituto.
+      onlyPreferred: true,
       timeoutMs: 100_000,
     });
     const segundos = Number(((Date.now() - inicio) / 1000).toFixed(1));
