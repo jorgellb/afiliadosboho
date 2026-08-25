@@ -1303,8 +1303,13 @@ button.secondary:hover:not(:disabled) {
 
 .look-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: clamp(1rem, 2.5vw, 1.8rem);
+  /* Una columna MAS que el catalogo en cada tramo (4 / 3 / 2).
+     Es una tira secundaria —"con que combinar la pieza"—, asi que sus fotos
+     deben leerse como apoyo y no competir con la ficha. Con auto-fill a 200px
+     el numero de columnas dependia del ancho de pantalla y no del papel de la
+     seccion. */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(0.8rem, 2vw, 1.4rem);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -4584,7 +4589,6 @@ form.stacked {
      columna que hay mas abajo, y declararlas aqui solo servia para que dos
      reglas se contradijeran. Se conserva el hueco, que si aplica. */
   .product-grid,
-  .look-grid,
   .fl-matches .product-grid {
     gap: 1.4rem 0.9rem;
   }
@@ -4653,9 +4657,13 @@ form.stacked {
    pequeñas: con la misma especificidad, decide el orden. */
 @media (max-width: 1000px) {
   .product-grid,
-  .look-grid,
   .fl-matches .product-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* La tira del look mantiene una columna mas que el catalogo. */
+  .look-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -4665,10 +4673,16 @@ form.stacked {
    a cada pieza el ancho entero de la pantalla. */
 @media (max-width: 620px) {
   .product-grid,
-  .look-grid,
   .fl-matches .product-grid {
     grid-template-columns: 1fr;
     gap: 1.8rem 0;
+  }
+
+  /* Dos columnas en movil, no una: a pantalla completa, una pieza de "combina
+     con" pesaria mas que el producto que se esta mirando. */
+  .look-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 0.7rem;
   }
 }
 
