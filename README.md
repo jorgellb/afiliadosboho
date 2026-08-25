@@ -59,25 +59,30 @@ La lógica compartida vive en `lib/`: `db/` (esquema y cliente), `providers/`
 
 ### Trampas de despliegue (leídas en carne propia)
 
-**El email del commit tiene que estar verificado en tu cuenta de GitHub.**
-Vercel rechaza el despliegue con *"the commit email ... could not be matched to
-a GitHub account"*. La causa no es el plan ni los permisos: si GitHub no puede
-atribuir el commit a un usuario, Vercel no tiene a quién comprobarle el acceso.
+**Quién firma el commit importa, y por qué.** Vercel comprueba que el autor
+del commit tenga acceso al proyecto, y eso encadena dos requisitos:
 
-`jorgellb@gmail.com` NO está verificado en la cuenta `jorgellb`, así que los
-commits firmados con él quedan huérfanos. La solución robusta es firmar con el
-correo *noreply* que emite el propio GitHub, que siempre casa:
+1. El correo del commit debe estar **verificado en GitHub**, o GitHub no puede
+   atribuirlo a ningún usuario. `jorgellb@gmail.com` no lo está, así que se
+   firma con el noreply que emite el propio GitHub y siempre casa:
+
+   ```bash
+   git config user.email "25139828+jorgellb@users.noreply.github.com"
+   ```
+
+2. Ese usuario debe tener acceso al proyecto en Vercel. El repositorio es de
+   `jorgellb` y la cuenta de Vercel es de `pedroalmansa1980`: para Vercel son
+   dos personas. Mientras el repositorio fue **privado**, el plan Hobby no
+   admitía colaboradores y el despliegue se rechazaba. **Al hacerlo público esa
+   restricción desaparece** (comprobado antes que el historial no contiene
+   ninguna credencial).
+
+Si aun así un despliegue se queda bloqueado, el CLI no pasa por esta
+comprobación y despliega desde tu disco:
 
 ```bash
-git config user.email "25139828+jorgellb@users.noreply.github.com"
+npx vercel --prod --yes
 ```
-
-La alternativa es añadir y verificar `jorgellb@gmail.com` en GitHub →
-Settings → Emails, si prefieres que el historial lleve tu correo real.
-
-Para desatascar un despliegue ya bloqueado basta un commit nuevo encima con el
-correo correcto: no hace falta reescribir el historial. También sirve desplegar
-por CLI con `npx vercel --prod --yes`, que no pasa por esa comprobación.
 
 **Tras desplegar por `git push`, el CSS puede dar 404.** El HTML nuevo se sirve
 con hashes que no coinciden con los ficheros publicados y la web sale sin
