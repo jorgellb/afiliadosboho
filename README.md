@@ -57,6 +57,30 @@ La lógica compartida vive en `lib/`: `db/` (esquema y cliente), `providers/`
 4. Aplica el esquema a la base de datos de producción desde tu máquina:
    `DATABASE_URL=<cadena de Neon> npm run db:migrate`.
 
+### Trampas de despliegue (leídas en carne propia)
+
+**El autor del commit debe tener acceso al proyecto en Vercel.** El repositorio
+es privado y el plan Hobby no admite colaboradores en repos privados, así que
+Vercel rechaza el despliegue con *"the commit author did not have contributing
+access"* si en el commit aparece cualquier identidad ajena a la cuenta. Eso
+incluye los **coautores**: un trailer `Co-Authored-By` con un correo que no sea
+el tuyo basta para bloquearlo. Los commits deben ir firmados solo como
+`jorgellb@gmail.com`, sin coautores.
+
+Para desatascar un despliegue bloqueado no hace falta reescribir el historial:
+basta un commit nuevo y limpio encima, o desplegar por CLI con
+`npx vercel --prod --yes`, que no pasa por esa comprobación.
+
+**Tras desplegar por `git push`, el CSS puede dar 404.** El HTML nuevo se sirve
+con hashes que no coinciden con los ficheros publicados y la web sale sin
+estilos. La solución fiable es lanzar después un `npx vercel --prod --yes`, que
+regenera los hashes. Comprobación rápida:
+
+```bash
+curl -s bohochic.es/ | grep -oE '/_next/static/[^"]+\.css'
+# y verificar que esa ruta responde 200
+```
+
 ## Notas sobre la API
 
 - **AliExpress**: la búsqueda usa `aliexpress.affiliate.product.query` con tu
