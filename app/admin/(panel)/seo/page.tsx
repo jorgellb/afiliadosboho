@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getSeoHealth, SeoIssue } from "@/lib/seo";
 import { SeoBulkButton } from "./seo-bulk-button";
+import { ModelPicker } from "./model-picker";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +71,7 @@ export default async function SeoHealthPage() {
             el límite de la IA.
           </p>
           <SeoBulkButton pending={h.counts.missing} />
+          <ModelPicker />
         </div>
       </div>
 

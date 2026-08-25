@@ -1,7 +1,8 @@
 import { desc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { Product, products } from "@/lib/db/schema";
-import { callModel } from "@/lib/assistant";
+import { chat } from "@/lib/llm";
+import { SETTING_SEO_MODEL, getSetting } from "@/lib/settings";
 import { bumpCacheVersion } from "@/lib/cache";
 
 // Límites recomendados por los buscadores (para avisos y validación).
@@ -52,7 +53,7 @@ async function writeSeoCopy(
   const keywordLine = opts.keyword
     ? `\n- Palabra clave OBJETIVO (debe aparecer literal en el título SEO y en la meta description): ${opts.keyword}`
     : "";
-  const message = await callModel(
+  const message = await chat(
     [
       {
         role: "user",
@@ -79,7 +80,10 @@ Producto:
 - Precio: ${product.price} ${product.currency}${keywordLine}`,
       },
     ],
-    { maxTokens: 4096 }
+    // El modelo elegido en el panel va primero; si falla, la cadena sigue
+    // con los demas, para que una eleccion desafortunada no deje el
+    // catalogo sin fichas.
+    { maxTokens: 4096, preferredModel: await getSetting(SETTING_SEO_MODEL) }
   );
   const raw = (message.content ?? "").replace(/```json|```/g, "").trim();
   const parsed = JSON.parse(raw) as Partial<SeoCopy>;
@@ -143,7 +147,7 @@ export async function generateSeoForProduct(
 
 /** Genera solo tags/keywords para un producto (más rápido y barato). */
 export async function generateTagsForProduct(product: Product): Promise<string[]> {
-  const message = await callModel(
+  const message = await chat(
     [
       {
         role: "user",
@@ -151,7 +155,7 @@ export async function generateTagsForProduct(product: Product): Promise<string[]
 Producto: ${product.title} (categoría: ${product.category})`,
       },
     ],
-    { maxTokens: 300 }
+    { maxTokens: 300, preferredModel: await getSetting(SETTING_SEO_MODEL) }
   );
   const raw = (message.content ?? "").replace(/```json|```/g, "").trim();
   const arr = JSON.parse(raw.slice(raw.indexOf("["))) as unknown[];

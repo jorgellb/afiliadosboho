@@ -24,10 +24,23 @@ async function main() {
   if (!url) throw new Error("falta DATABASE_URL");
 
   // Cliente propio: los scripts son de un solo uso y no comparten el pool de
-  // la app. La verificación TLS sigue la misma regla que lib/db/pool.ts.
+  // la app. La verificación TLS sigue la misma regla que lib/db/pool.ts, y con
+  // el mismo matiz: hay que QUITAR `sslmode` de la cadena, porque `pg` lo
+  // interpreta como verify-full y ese valor pisa el objeto `ssl` de abajo. Con
+  // la URL de Aiven tal cual, la conexión muere con "self-signed certificate".
+  const limpia = (() => {
+    try {
+      const parsed = new URL(url);
+      parsed.searchParams.delete("sslmode");
+      return parsed.toString();
+    } catch {
+      return url;
+    }
+  })();
+
   const ca = process.env.DATABASE_CA_CERT?.trim();
   const client = new pg.Client({
-    connectionString: url,
+    connectionString: limpia,
     ssl: ca
       ? { ca: ca.replace(/\\n/g, "\n"), rejectUnauthorized: true }
       : { rejectUnauthorized: false },

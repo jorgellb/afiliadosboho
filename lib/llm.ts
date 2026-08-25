@@ -27,6 +27,12 @@ export interface LlmOptions {
   maxTokens?: number;
   /** Corta antes de que la plataforma mate la función sin mensaje. */
   timeoutMs?: number;
+  /**
+   * Modelo de OpenRouter a intentar el PRIMERO. Lo usa el redactor de fichas
+   * con el que se haya elegido en el panel. Si falla, la cadena sigue con los
+   * demás en vez de rendirse.
+   */
+  preferredModel?: string | null;
 }
 
 interface Provider {
@@ -68,18 +74,26 @@ function list(value: string | undefined, fallback: string[]): string[] {
  * OpenRouter va primero por ser gratuito. Si no hay clave, simplemente no
  * entra en la cadena y todo sigue funcionando con NVIDIA como hasta ahora.
  */
-function providers(): Provider[] {
+function providers(preferido?: string | null): Provider[] {
   const chain: Provider[] = [];
 
   const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
   if (openrouterKey) {
+    // El modelo elegido en el panel encabeza la lista, pero NO la sustituye:
+    // si ese modelo se retira del catálogo gratuito (pasa a menudo), la cadena
+    // sigue teniendo alternativas y las fichas no dejan de redactarse.
+    const base = list(process.env.OPENROUTER_MODELS, DEFAULT_OPENROUTER_MODELS);
+    const models = preferido
+      ? [preferido, ...base.filter((m) => m !== preferido)]
+      : base;
+
     chain.push({
       name: "openrouter",
       baseUrl:
         process.env.OPENROUTER_BASE_URL?.trim() ||
         "https://openrouter.ai/api/v1",
       apiKey: openrouterKey,
-      models: list(process.env.OPENROUTER_MODELS, DEFAULT_OPENROUTER_MODELS),
+      models,
       // OpenRouter usa estas dos cabeceras para atribuir el tráfico. No son
       // obligatorias, pero sin ellas el consumo aparece como anónimo.
       extraHeaders: {
@@ -120,6 +134,11 @@ function providers(): Provider[] {
 /** ¿Hay algún proveedor configurado? Para diagnóstico en el panel. */
 export function hasLlm(): boolean {
   return providers().length > 0;
+}
+
+/** True si OpenRouter está configurado (hace falta para elegir modelo). */
+export function hasOpenRouter(): boolean {
+  return Boolean(process.env.OPENROUTER_API_KEY?.trim());
 }
 
 /** Nombres de los proveedores activos, en orden. */
@@ -223,7 +242,7 @@ export async function chat(
   messages: LlmMessage[],
   opts: LlmOptions = {}
 ): Promise<LlmMessage> {
-  const chain = providers();
+  const chain = providers(opts.preferredModel);
   if (chain.length === 0) {
     throw new Error(
       "No hay ningún proveedor de IA configurado (OPENROUTER_API_KEY o NVIDIA_API_KEY)"
