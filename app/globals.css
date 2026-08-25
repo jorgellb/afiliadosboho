@@ -546,7 +546,7 @@ a {
 
 .hero-collage .col-a {
   width: 68%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 1 / 1;
   top: 0;
   right: 0;
   z-index: 1;
@@ -555,7 +555,7 @@ a {
 
 .hero-collage .col-b {
   width: 46%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 1 / 1;
   bottom: 0;
   left: 0;
   z-index: 2;
@@ -1148,9 +1148,13 @@ button.secondary:hover:not(:disabled) {
 
 .product-grid {
   display: grid;
-  /* min() evita que la columna mínima (240px) fuerce scroll en móviles < 240px. */
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
-  gap: clamp(1.5rem, 3vw, 2.6rem) clamp(1rem, 2vw, 1.6rem);
+  /* min() evita que la columna mínima fuerce scroll en móviles estrechos.
+     La columna sube de 240 a 260: con la imagen cuadrada cabe lo mismo, y el
+     conjunto respira. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  /* Más aire, sobre todo entre filas: el arco necesita espacio alrededor para
+     leerse como forma y no como recorte. */
+  gap: clamp(2.2rem, 4vw, 3.4rem) clamp(1.2rem, 2.2vw, 2rem);
   list-style: none;
   padding: clamp(1.6rem, 3vw, 2.4rem) 0 0;
   margin: 0;
@@ -1162,33 +1166,47 @@ button.secondary:hover:not(:disabled) {
   gap: 0.55rem;
 }
 
+/* ARCO DE MEDIO PUNTO.
+   Es la forma que define el estilo boho y el setentero, y ahora encaja: con la
+   imagen cuadrada el arco corona la pieza en vez de cortarla. El radio superior
+   va en porcentaje para que la curva escale con la tarjeta; el inferior se
+   queda recto y da al conjunto aire de hornacina. */
 .card-media {
   position: relative;
   overflow: hidden;
   border: none;
-  border-radius: var(--radius);
+  border-radius: 46% 46% var(--radius-sm) var(--radius-sm) / 28% 28% var(--radius-sm) var(--radius-sm);
   background: var(--paper-deep);
   display: block;
-  box-shadow: var(--shadow-soft);
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  /* Sombra más tenue y difusa: la anterior recortaba la silueta del arco y lo
+     hacía parecer una pegatina. */
+  box-shadow: 0 14px 34px -22px rgba(63, 56, 46, 0.3);
+  transition: box-shadow 0.45s ease, transform 0.45s ease;
 }
 
 .product-card:hover .card-media {
-  box-shadow: var(--shadow);
-  transform: translateY(-4px);
+  box-shadow: 0 22px 46px -24px rgba(63, 56, 46, 0.36);
+  /* Elevación más contenida: los 4px de antes daban un salto brusco. */
+  transform: translateY(-3px);
 }
 
+/* Cuadradas, no verticales.
+   Las fotos del proveedor son 1000x1000. Meterlas en una caja 3/4 las
+   estiraba a lo alto Y recortaba producto por los lados con object-fit:
+   cover. En 1/1 se ve la pieza entera y los atributos width/height (640x640)
+   dejan de contradecir al CSS. */
 .product-card img {
   display: block;
   width: 100%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
   transition: transform 0.7s cubic-bezier(0.2, 0.6, 0.2, 1), filter 0.7s;
 }
 
 .product-card:hover img {
-  transform: scale(1.05);
-  filter: saturate(1.06);
+  /* Zoom apenas perceptible: el 1.05 de antes competía con la curva del arco. */
+  transform: scale(1.03);
+  filter: saturate(1.04);
 }
 
 .badge {
@@ -1207,7 +1225,12 @@ button.secondary:hover:not(:disabled) {
   color: var(--ink-soft);
 }
 
+/* Titulo de tarjeta: serif, mas aire sobre el arco y sin gritar. */
 .product-card h3 {
+  font-family: var(--font-display);
+  line-height: 1.32;
+  letter-spacing: 0.005em;
+  margin-top: 0.15rem;
   margin: 0.2rem 0 0;
   font-size: 1.05rem;
   font-weight: 500;
@@ -1300,7 +1323,7 @@ button.secondary:hover:not(:disabled) {
 
 .look-item img {
   width: 100%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
   border: 1px solid var(--line);
   background: var(--paper-deep);
@@ -1455,8 +1478,11 @@ button.secondary:hover:not(:disabled) {
 
 .ficha-media img {
   width: 100%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
+  /* El mismo arco que las tarjetas, algo mas abierto por el tamano: mantiene
+     el lenguaje visual de la tienda en la ficha. */
+  border-radius: 42% 42% var(--radius) var(--radius) / 26% 26% var(--radius) var(--radius);
   border: 1px solid var(--line);
   background: var(--paper-deep);
   box-shadow: var(--shadow);
@@ -2706,7 +2732,7 @@ button.secondary:hover:not(:disabled) {
 
 .edit-media img {
   width: 130px;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
   border: 1px solid var(--line);
   margin-bottom: 1rem;
@@ -2918,7 +2944,7 @@ button.danger:hover:not(:disabled) {
 
 .search-results img {
   width: 100%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
   border: 1px solid var(--line);
 }
@@ -3047,12 +3073,14 @@ form.stacked {
     grid-template-columns: 1fr;
   }
 
-  /* La imagen grande mide 68% del ancho con proporción 3/4 (0.91 × ancho):
-     el alto se ata al ancho para que no se desborde sobre el titular. */
+  /* La imagen grande mide 68% del ancho y ahora es CUADRADA: 0.68 × ancho de
+     alto, donde antes (con 3/4) eran 0.91. El contenedor se ajusta a esa
+     altura más el desborde de la pequeña; con el 0.95 de antes quedaba un
+     palmo de hueco vacío bajo el collage. */
   .hero-collage {
     order: -1;
     min-height: 0;
-    aspect-ratio: 1 / 0.95;
+    aspect-ratio: 1 / 0.72;
   }
 
   /* Cinta deslizable con parada por chip y borde difuminado (hay más a la derecha). */
